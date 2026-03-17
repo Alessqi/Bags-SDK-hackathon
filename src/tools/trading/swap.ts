@@ -6,6 +6,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { getBagsSDK } from "../../client/bags-sdk-wrapper.js";
 import { mcpError } from "../../utils/errors.js";
+import { requireValidAddress } from "../../utils/validation.js";
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 
@@ -28,6 +29,8 @@ export function registerSwap(server: McpServer) {
     inputSchema,
     async ({ tokenMint, side, amount, walletAddress, slippageBps }) => {
       try {
+        requireValidAddress(tokenMint, "tokenMint");
+        requireValidAddress(walletAddress, "walletAddress");
         const sdk = getBagsSDK();
         const inputMint = side === "buy" ? new PublicKey(SOL_MINT) : new PublicKey(tokenMint);
         const outputMint = side === "buy" ? new PublicKey(tokenMint) : new PublicKey(SOL_MINT);

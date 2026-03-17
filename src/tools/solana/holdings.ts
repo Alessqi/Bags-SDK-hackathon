@@ -6,6 +6,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { getConnection } from "../../client/bags-sdk-wrapper.js";
 import { mcpError } from "../../utils/errors.js";
+import { requireValidAddress } from "../../utils/validation.js";
 
 const inputSchema = {
   walletAddress: z.string().describe("Base58 Solana wallet address"),
@@ -29,6 +30,7 @@ export function registerTokenHoldings(server: McpServer) {
     inputSchema,
     async ({ walletAddress }) => {
       try {
+        requireValidAddress(walletAddress, "walletAddress");
         const connection = getConnection();
         const pubkey = new PublicKey(walletAddress);
 

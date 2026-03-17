@@ -6,6 +6,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getBagsSDK } from "../../client/bags-sdk-wrapper.js";
 import { mcpError } from "../../utils/errors.js";
 import { lamportsToSol } from "../../utils/formatting.js";
+import { requireValidAddress } from "../../utils/validation.js";
 
 const inputSchema = {
   walletAddress: z.string().describe("Base58 wallet address to claim all fees for"),
@@ -23,6 +24,7 @@ export function registerClaimAllFees(server: McpServer) {
     inputSchema,
     async ({ walletAddress, minClaimLamports }) => {
       try {
+        requireValidAddress(walletAddress, "walletAddress");
         const sdk = getBagsSDK();
         const wallet = new PublicKey(walletAddress);
         const positions = await sdk.fee.getAllClaimablePositions(wallet);

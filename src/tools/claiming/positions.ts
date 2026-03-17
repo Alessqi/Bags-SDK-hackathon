@@ -8,6 +8,7 @@ import { getBagsSDK } from "../../client/bags-sdk-wrapper.js";
 import { cache, CACHE_TTL } from "../../client/cache.js";
 import { mcpError } from "../../utils/errors.js";
 import { lamportsToSol } from "../../utils/formatting.js";
+import { requireValidAddress } from "../../utils/validation.js";
 
 const inputSchema = {
   walletAddress: z.string().describe("Base58 wallet address to check positions for"),
@@ -24,6 +25,7 @@ export function registerClaimablePositions(server: McpServer) {
     inputSchema,
     async ({ walletAddress }) => {
       try {
+        requireValidAddress(walletAddress, "walletAddress");
         const cacheKey = `positions:${walletAddress}`;
         const cached = cache.get<unknown>(cacheKey);
         if (cached) {
