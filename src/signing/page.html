@@ -11,23 +11,25 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg: #f5f5ee;
-      --bg-card: #ffffff;
-      --text: #0d0d0f;
-      --text-muted: rgba(13, 13, 15, 0.5);
-      --text-light: rgba(13, 13, 15, 0.3);
+      --bg: #0d0d0f;
+      --bg-card: #1a1a1e;
+      --text: #f5f5ee;
+      --text-muted: rgba(245, 245, 238, 0.5);
+      --text-light: rgba(245, 245, 238, 0.3);
       --accent: #00d62b;
       --accent-hover: #00b824;
-      --border: rgba(13, 13, 15, 0.08);
-      --border-hover: rgba(13, 13, 15, 0.2);
-      --error-bg: #fff0f0;
-      --error-text: #d32f2f;
-      --success-bg: #edfff0;
-      --success-text: #0a7c1a;
-      --info-bg: #f0f4ff;
-      --info-text: #3b5998;
+      --accent-text: #0d0d0f;
+      --border: rgba(245, 245, 238, 0.08);
+      --border-hover: rgba(245, 245, 238, 0.2);
+      --error-bg: rgba(214, 43, 43, 0.12);
+      --error-text: #f87171;
+      --success-bg: rgba(0, 214, 43, 0.1);
+      --success-text: #00d62b;
+      --info-bg: rgba(100, 140, 255, 0.1);
+      --info-text: #7c9cff;
       --radius: 16px;
       --radius-sm: 10px;
+      --radius-pill: 9999px;
     }
 
     body {
@@ -67,7 +69,7 @@
       border-radius: var(--radius);
       padding: 1.25rem;
       margin-bottom: 0.75rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
 
     .card h2 {
@@ -115,7 +117,7 @@
 
     .wallet-btn:hover {
       border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(0, 214, 43, 0.15);
+      box-shadow: 0 0 0 2px rgba(0, 214, 43, 0.2);
     }
 
     .wallet-btn:disabled {
@@ -134,8 +136,8 @@
       padding: 0.9rem;
       background: var(--accent);
       border: none;
-      border-radius: var(--radius-sm);
-      color: #fff;
+      border-radius: var(--radius-pill);
+      color: var(--accent-text);
       font-family: inherit;
       font-size: 1.05rem;
       font-weight: 700;
@@ -213,7 +215,7 @@
     }
 
     .powered-by a {
-      color: var(--text-muted);
+      color: var(--accent);
       text-decoration: none;
       font-weight: 600;
     }
