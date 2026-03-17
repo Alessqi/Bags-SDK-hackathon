@@ -86,6 +86,20 @@ That's it. The signing page runs on localhost — connect Phantom, Solflare, Bac
 
 ---
 
+## Claiming Your Creator Fees
+
+Every token launched on Bags.fm earns trading fees for the creator. Here is how you collect them:
+
+```
+Step 1:  "Show my claimable positions"          → sees SOL owed per token
+Step 2:  "Claim my fees from token XYZ..."      → opens a signing page
+Step 3:  Open the URL → connect Phantom → sign  → SOL deposited to your wallet
+```
+
+The signing page runs on localhost. Connect the **same wallet you launched with**. One signature, fees hit your wallet instantly. Use `"Claim all my fees"` to batch every position into one signing session.
+
+---
+
 ## What Else Can It Do
 
 | Say this | Get this |
