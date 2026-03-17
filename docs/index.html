@@ -1017,15 +1017,26 @@ npm start</code></pre>
 
 <!-- ═══════════════════ GUIDE: CLAIM ═══════════════════ -->
 <div class="section" id="guide-claim">
-  <h2>Guide: Claim All Fees</h2>
-  <h3>Step 1 &mdash; Review positions</h3>
-  <pre><code>"Show my claimable positions"</code></pre>
-  <p>Tool: <code>bags_claimable_positions</code></p>
-  <h3>Step 2 &mdash; Claim with dust filter</h3>
-  <pre><code>"Claim all my fees, skip anything under 0.01 SOL"</code></pre>
-  <p>Tool: <code>bags_claim_all_fees</code> with <code>minClaimLamports: 10000000</code></p>
-  <h3>Step 3 &mdash; Sign and broadcast</h3>
-  <p>Each transaction is returned unsigned. Sign with your wallet, then broadcast with <code>bags_send_transaction</code>.</p>
+  <h2>Guide: Claim Your Creator Fees</h2>
+  <p>Every token launched via Bags.fm accumulates trading fees for the creator. Here is how to collect them.</p>
+  <h3>Step 1 &mdash; Check what you are owed</h3>
+  <pre><code>"Show my claimable positions for wallet ABC123..."</code></pre>
+  <p>Tool: <code>bags_claimable_positions</code> &mdash; returns each token with unclaimed SOL amount.</p>
+  <h3>Step 2 &mdash; Claim fees for one token</h3>
+  <pre><code>"Claim my fees from token XYZ..."</code></pre>
+  <p>Tool: <code>bags_claim_fees</code> &mdash; builds the unsigned transaction and opens a <strong>signing page</strong> at localhost:3141.</p>
+  <h3>Step 3 &mdash; Sign in your browser</h3>
+  <p>Open the signing URL. Connect the <strong>same wallet</strong> that launched the token (Phantom, Solflare, etc.). Sign the transaction. Your SOL is deposited immediately.</p>
+  <div class="callout callout-tip">
+    <span class="callout-icon">&#128161;</span>
+    <span><strong>Claim everything at once:</strong> Use <code>bags_claim_all_fees</code> with an optional dust filter (e.g. skip positions under 0.01 SOL). All claim transactions are batched into a single signing page.</span>
+  </div>
+  <h3>How it works under the hood</h3>
+  <p>The SDK fetches your claimable positions, builds claim transactions via the Bags API, and routes them through the local signing server. Your private key never leaves your wallet &mdash; the MCP server only handles unsigned transactions.</p>
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#9888;&#65039;</span>
+    <span><strong>Important:</strong> You must sign with the wallet that launched the token. If you launched from Phantom, connect Phantom on the signing page. A Bags.fm custodial wallet cannot sign browser-side.</span>
+  </div>
 </div>
 
 <!-- ═══════════════════ GUIDE: LAUNCH SOLO ═══════════════════ -->

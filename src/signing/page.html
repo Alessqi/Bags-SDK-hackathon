@@ -613,14 +613,16 @@
           var signedTx;
 
           try {
-            var tx = Transaction.from(txBytes);
-            tx.feePayer = connectedWallet.provider.publicKey;
-            var bh = await connection.getLatestBlockhash();
-            tx.recentBlockhash = bh.blockhash;
-            signedTx = await connectedWallet.provider.signTransaction(tx);
-          } catch (_e) {
             var vtx = VersionedTransaction.deserialize(txBytes);
             signedTx = await connectedWallet.provider.signTransaction(vtx);
+          } catch (_e) {
+            var tx = Transaction.from(txBytes);
+            if (!tx.feePayer) tx.feePayer = connectedWallet.provider.publicKey;
+            if (!tx.recentBlockhash) {
+              var bh = await connection.getLatestBlockhash();
+              tx.recentBlockhash = bh.blockhash;
+            }
+            signedTx = await connectedWallet.provider.signTransaction(tx);
           }
 
           var sig = await connection.sendRawTransaction(signedTx.serialize());
