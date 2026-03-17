@@ -251,6 +251,53 @@
     .powered-by a:hover {
       color: var(--accent);
     }
+
+    .phase-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .phase-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background 0.3s;
+    }
+
+    .phase-dot.active {
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(0, 214, 43, 0.4);
+    }
+
+    .phase-dot.done {
+      background: var(--accent);
+    }
+
+    .phase-label {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 0.5rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -259,6 +306,14 @@
       <h1><span class="bags">Bags</span>.fm SDK</h1>
       <span class="sub">Hackathon Project</span>
     </div>
+
+    <!-- Phase indicator (launch mode only) -->
+    <div class="phase-indicator hidden" id="phase-indicator">
+      <div class="phase-dot active" id="dot-connect"></div>
+      <div class="phase-dot" id="dot-fee"></div>
+      <div class="phase-dot" id="dot-launch"></div>
+    </div>
+    <div class="phase-label hidden" id="phase-label">Connect your wallet</div>
 
     <!-- Token metadata -->
     <div class="card" id="meta-card">
@@ -297,32 +352,44 @@
 
   <script src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
   <script>
-    /* Signing page for Bags.fm MCP server — handles wallet connection and transaction signing. */
+    /* Signing page — supports both pre-built (/sign) and two-phase (/launch) flows. */
 
-    const SESSION_ID = window.location.pathname.split("/sign/")[1];
-    const API_BASE = window.location.origin;
-    const { Connection, Transaction, VersionedTransaction } = solanaWeb3;
+    var API_BASE = window.location.origin;
+    var Connection = solanaWeb3.Connection;
+    var Transaction = solanaWeb3.Transaction;
+    var VersionedTransaction = solanaWeb3.VersionedTransaction;
 
-    let sessionData = null;
-    let connectedWallet = null;
-    let rpcUrl = "https://api.mainnet-beta.solana.com";
+    var connectedWallet = null;
+    var rpcUrl = "https://api.mainnet-beta.solana.com";
+    var currentTransactions = [];
 
-    const KNOWN_WALLETS = [
-      { name: "Phantom",   check: () => window.phantom?.solana,   icon: "https://phantom.app/img/phantom-logo.svg" },
-      { name: "Solflare",  check: () => window.solflare,          icon: "https://solflare.com/favicon.ico" },
-      { name: "Backpack",  check: () => window.backpack,          icon: "https://backpack.app/favicon.ico" },
-      { name: "Coinbase",  check: () => window.coinbaseSolana,    icon: "https://www.coinbase.com/favicon.ico" },
+    var KNOWN_WALLETS = [
+      { name: "Phantom",   check: function() { return window.phantom?.solana; },   icon: "https://phantom.app/img/phantom-logo.svg" },
+      { name: "Solflare",  check: function() { return window.solflare; },          icon: "https://solflare.com/favicon.ico" },
+      { name: "Backpack",  check: function() { return window.backpack; },          icon: "https://backpack.app/favicon.ico" },
+      { name: "Coinbase",  check: function() { return window.coinbaseSolana; },    icon: "https://www.coinbase.com/favicon.ico" },
     ];
+
+    /** Detect page mode from URL path. */
+    function detectMode() {
+      var path = window.location.pathname;
+      if (path.includes("/launch/")) {
+        return { mode: "launch", sessionId: path.split("/launch/")[1] };
+      }
+      return { mode: "sign", sessionId: path.split("/sign/")[1] };
+    }
+
+    var PAGE = detectMode();
 
     /** Decode a base58 string to Uint8Array. */
     function decodeBase58(str) {
-      const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-      const bytes = [0];
-      for (const char of str) {
-        const idx = ALPHABET.indexOf(char);
-        if (idx === -1) throw new Error("Invalid base58 character: " + char);
-        let carry = idx;
-        for (let j = 0; j < bytes.length; j++) {
+      var ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+      var bytes = [0];
+      for (var ci = 0; ci < str.length; ci++) {
+        var idx = ALPHABET.indexOf(str[ci]);
+        if (idx === -1) throw new Error("Invalid base58 character: " + str[ci]);
+        var carry = idx;
+        for (var j = 0; j < bytes.length; j++) {
           carry += bytes[j] * 58;
           bytes[j] = carry & 0xff;
           carry >>= 8;
@@ -332,8 +399,8 @@
           carry >>= 8;
         }
       }
-      for (const char of str) {
-        if (char !== "1") break;
+      for (var li = 0; li < str.length; li++) {
+        if (str[li] !== "1") break;
         bytes.push(0);
       }
       return new Uint8Array(bytes.reverse());
@@ -341,44 +408,85 @@
 
     /** Show a status message below the cards. */
     function showStatus(message, type) {
-      const area = document.getElementById("status-area");
-      const div = document.createElement("div");
+      var area = document.getElementById("status-area");
+      var div = document.createElement("div");
       div.className = "status " + type;
       div.innerHTML = message;
       area.appendChild(div);
     }
 
+    /** Remove info-type status messages (spinners). */
+    function clearInfoStatuses() {
+      var infos = document.querySelectorAll(".status.info");
+      infos.forEach(function(s) { s.remove(); });
+    }
+
     /** Populate the token metadata card. */
     function renderMeta(meta) {
-      const rows = document.getElementById("meta-rows");
+      var rows = document.getElementById("meta-rows");
       if (!meta || Object.keys(meta).length === 0) {
         rows.innerHTML = '<div class="meta-row"><span class="meta-label">Signing transactions for Bags.fm</span></div>';
         return;
       }
       rows.innerHTML = "";
-      for (const [key, value] of Object.entries(meta)) {
-        const row = document.createElement("div");
+      for (var key in meta) {
+        if (!meta.hasOwnProperty(key)) continue;
+        var row = document.createElement("div");
         row.className = "meta-row";
-        row.innerHTML = `<span class="meta-label">${key}</span><span class="meta-value">${value}</span>`;
+        row.innerHTML = '<span class="meta-label">' + key + '</span><span class="meta-value">' + meta[key] + '</span>';
         rows.appendChild(row);
+      }
+    }
+
+    /** Update the three-dot phase indicator (launch mode only). */
+    function setPhase(phase) {
+      var dotConnect = document.getElementById("dot-connect");
+      var dotFee = document.getElementById("dot-fee");
+      var dotLaunch = document.getElementById("dot-launch");
+      var label = document.getElementById("phase-label");
+
+      dotConnect.className = "phase-dot";
+      dotFee.className = "phase-dot";
+      dotLaunch.className = "phase-dot";
+
+      if (phase === "connect") {
+        dotConnect.className = "phase-dot active";
+        label.textContent = "Connect your wallet";
+      } else if (phase === "fee_config") {
+        dotConnect.className = "phase-dot done";
+        dotFee.className = "phase-dot active";
+        label.textContent = "Sign fee setup";
+      } else if (phase === "launch") {
+        dotConnect.className = "phase-dot done";
+        dotFee.className = "phase-dot done";
+        dotLaunch.className = "phase-dot active";
+        label.textContent = "Sign launch transaction";
+      } else if (phase === "complete") {
+        dotConnect.className = "phase-dot done";
+        dotFee.className = "phase-dot done";
+        dotLaunch.className = "phase-dot done";
+        label.textContent = "Launch complete!";
       }
     }
 
     /** Detect available wallets and render connection buttons. */
     function renderWallets() {
-      const list = document.getElementById("wallet-list");
-      const noWallets = document.getElementById("no-wallets");
-      let found = 0;
+      var list = document.getElementById("wallet-list");
+      var noWallets = document.getElementById("no-wallets");
+      var found = 0;
 
-      for (const wallet of KNOWN_WALLETS) {
-        const provider = wallet.check();
+      for (var wi = 0; wi < KNOWN_WALLETS.length; wi++) {
+        var wallet = KNOWN_WALLETS[wi];
+        var provider = wallet.check();
         if (!provider) continue;
         found++;
 
-        const btn = document.createElement("button");
+        var btn = document.createElement("button");
         btn.className = "wallet-btn";
-        btn.innerHTML = `<img src="${wallet.icon}" alt="${wallet.name}"> ${wallet.name}`;
-        btn.addEventListener("click", () => connectWallet(wallet.name, provider));
+        btn.innerHTML = '<img src="' + wallet.icon + '" alt="' + wallet.name + '"> ' + wallet.name;
+        btn.addEventListener("click", (function(w, p) {
+          return function() { connectWallet(w.name, p); };
+        })(wallet, provider));
         list.appendChild(btn);
       }
 
@@ -387,72 +495,127 @@
       }
     }
 
+    /** Show the wallet-connected state in the wallet card. */
+    function showConnectedWallet(name, pubkey) {
+      document.getElementById("wallet-card").innerHTML =
+        '<h2>Connected</h2><div class="meta-row"><span class="meta-label">' + name +
+        '</span><span class="meta-value">' + pubkey.slice(0, 4) + '...' + pubkey.slice(-4) + '</span></div>';
+    }
+
+    /** Show the sign card with description and button text. */
+    function showSignCard(description, buttonText) {
+      var card = document.getElementById("sign-card");
+      card.classList.remove("hidden");
+      document.getElementById("sign-description").textContent = description;
+      var btn = document.getElementById("sign-btn");
+      btn.textContent = buttonText;
+      btn.disabled = false;
+    }
+
     /** Connect to the selected wallet provider. */
     async function connectWallet(name, provider) {
       try {
-        const buttons = document.querySelectorAll(".wallet-btn");
-        buttons.forEach((b) => { b.disabled = true; });
+        var buttons = document.querySelectorAll(".wallet-btn");
+        buttons.forEach(function(b) { b.disabled = true; });
 
-        const resp = await provider.connect();
-        const pubkey = resp.publicKey?.toString() || provider.publicKey?.toString();
-        connectedWallet = { name, provider, pubkey };
+        var resp = await provider.connect();
+        var pubkey = (resp.publicKey && resp.publicKey.toString()) || (provider.publicKey && provider.publicKey.toString());
+        connectedWallet = { name: name, provider: provider, pubkey: pubkey };
 
-        document.getElementById("wallet-card").innerHTML =
-          `<h2>Connected</h2><div class="meta-row"><span class="meta-label">${name}</span><span class="meta-value">${pubkey.slice(0, 4)}...${pubkey.slice(-4)}</span></div>`;
+        showConnectedWallet(name, pubkey);
 
-        document.getElementById("sign-card").classList.remove("hidden");
-        const txCount = sessionData.transactions.length;
-        document.getElementById("sign-description").textContent =
-          `${txCount} transaction${txCount > 1 ? "s" : ""} to sign. ${sessionData.description || ""}`;
+        if (PAGE.mode === "sign") {
+          onSignModeConnected();
+        } else {
+          await onLaunchModeConnected(pubkey);
+        }
       } catch (err) {
         showStatus("Wallet connection failed: " + err.message, "error");
-        document.querySelectorAll(".wallet-btn").forEach((b) => { b.disabled = false; });
+        document.querySelectorAll(".wallet-btn").forEach(function(b) { b.disabled = false; });
       }
     }
 
-    /** Sign and send all transactions in order. */
-    async function signAndSend() {
-      const btn = document.getElementById("sign-btn");
-      const bar = document.getElementById("progress-bar");
-      const fill = document.getElementById("progress-fill");
+    /** After wallet connect in pre-built signing mode — show sign button. */
+    function onSignModeConnected() {
+      var txCount = currentTransactions.length;
+      showSignCard(
+        txCount + " transaction" + (txCount > 1 ? "s" : "") + " to sign.",
+        "Sign & Send"
+      );
+      document.getElementById("sign-btn").onclick = function() { signAndSend("sign"); };
+    }
+
+    /** After wallet connect in launch mode — send wallet to server, get fee config txs. */
+    async function onLaunchModeConnected(pubkey) {
+      showStatus('<span class="spinner"></span>Building fee setup transactions...', "info");
+
+      try {
+        var resp = await fetch(API_BASE + "/api/launch/" + PAGE.sessionId + "/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ wallet: pubkey }),
+        });
+        var data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || "Failed to build fee config");
+
+        clearInfoStatuses();
+        currentTransactions = data.transactions;
+        setPhase("fee_config");
+        showSignCard(
+          data.transactions.length + " fee setup transaction" + (data.transactions.length > 1 ? "s" : "") + " to sign.",
+          "Sign Fee Setup"
+        );
+        document.getElementById("sign-btn").onclick = function() { signAndSend("fee_config"); };
+      } catch (err) {
+        clearInfoStatuses();
+        showStatus("Failed to build transactions: " + err.message, "error");
+      }
+    }
+
+    /** Sign and send all current transactions, then advance to next phase. */
+    async function signAndSend(phase) {
+      var btn = document.getElementById("sign-btn");
+      var bar = document.getElementById("progress-bar");
+      var fill = document.getElementById("progress-fill");
 
       btn.disabled = true;
       btn.textContent = "Signing...";
       bar.classList.remove("hidden");
+      fill.style.width = "0%";
 
-      const connection = new Connection(rpcUrl, "confirmed");
-      const txs = sessionData.transactions;
-      const signatures = [];
+      var connection = new Connection(rpcUrl, "confirmed");
+      var txs = currentTransactions;
+      var signatures = [];
 
-      for (let i = 0; i < txs.length; i++) {
+      for (var i = 0; i < txs.length; i++) {
         fill.style.width = ((i / txs.length) * 100) + "%";
 
         try {
-          const txBytes = decodeBase58(txs[i]);
-          let signedTx;
+          var txBytes = decodeBase58(txs[i]);
+          var signedTx;
 
           try {
-            const tx = Transaction.from(txBytes);
+            var tx = Transaction.from(txBytes);
             tx.feePayer = connectedWallet.provider.publicKey;
-            const { blockhash } = await connection.getLatestBlockhash();
-            tx.recentBlockhash = blockhash;
+            var bh = await connection.getLatestBlockhash();
+            tx.recentBlockhash = bh.blockhash;
             signedTx = await connectedWallet.provider.signTransaction(tx);
-          } catch {
-            const vtx = VersionedTransaction.deserialize(txBytes);
+          } catch (_e) {
+            var vtx = VersionedTransaction.deserialize(txBytes);
             signedTx = await connectedWallet.provider.signTransaction(vtx);
           }
 
-          const sig = await connection.sendRawTransaction(signedTx.serialize());
+          var sig = await connection.sendRawTransaction(signedTx.serialize());
           await connection.confirmTransaction(sig, "confirmed");
           signatures.push(sig);
 
           showStatus(
-            `Transaction ${i + 1}/${txs.length} confirmed. ` +
-            `<a class="explorer-link" href="https://solscan.io/tx/${sig}" target="_blank">View on Solscan</a>`,
+            "Transaction " + (i + 1) + "/" + txs.length + " confirmed. " +
+            '<a class="explorer-link" href="https://solscan.io/tx/' + sig + '" target="_blank">View on Solscan</a>',
             "success"
           );
         } catch (err) {
-          showStatus(`Transaction ${i + 1}/${txs.length} failed: ${err.message}`, "error");
+          showStatus("Transaction " + (i + 1) + "/" + txs.length + " failed: " + err.message, "error");
           btn.textContent = "Retry";
           btn.disabled = false;
           return;
@@ -460,37 +623,120 @@
       }
 
       fill.style.width = "100%";
-      btn.textContent = "All signed!";
+      bar.classList.add("hidden");
 
-      /* Notify the MCP server that signing is complete. */
+      if (PAGE.mode === "sign") {
+        await finishSignMode(signatures);
+      } else {
+        await advanceLaunchPhase(phase, signatures);
+      }
+    }
+
+    /** Finish a pre-built signing session. */
+    async function finishSignMode(signatures) {
+      document.getElementById("sign-btn").textContent = "All signed!";
       try {
-        await fetch(`${API_BASE}/api/sign/${SESSION_ID}/complete`, {
+        await fetch(API_BASE + "/api/sign/" + PAGE.sessionId + "/complete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ signatures }),
+          body: JSON.stringify({ signatures: signatures }),
         });
-      } catch {
+      } catch (_e) {
         /* Server notification is best-effort. */
+      }
+    }
+
+    /** Advance to the next launch phase after signing. */
+    async function advanceLaunchPhase(phase, signatures) {
+      var btn = document.getElementById("sign-btn");
+
+      if (phase === "fee_config") {
+        btn.textContent = "Building launch...";
+        showStatus('<span class="spinner"></span>Building launch transaction...', "info");
+
+        try {
+          var resp = await fetch(API_BASE + "/api/launch/" + PAGE.sessionId + "/fee-signed", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ signatures: signatures }),
+          });
+          var data = await resp.json();
+          if (!resp.ok) throw new Error(data.error || "Failed to build launch transaction");
+
+          clearInfoStatuses();
+          currentTransactions = data.transactions;
+          setPhase("launch");
+          showSignCard(
+            "Launch transaction ready. " + (data.description || ""),
+            "Launch Token"
+          );
+          document.getElementById("sign-btn").onclick = function() { signAndSend("launch"); };
+        } catch (err) {
+          clearInfoStatuses();
+          showStatus("Failed to build launch transaction: " + err.message, "error");
+          btn.textContent = "Retry";
+          btn.disabled = false;
+        }
+        return;
+      }
+
+      if (phase === "launch") {
+        setPhase("complete");
+        btn.textContent = "Launched!";
+        showStatus("Your token is live on Bags.fm!", "success");
+
+        try {
+          await fetch(API_BASE + "/api/launch/" + PAGE.sessionId + "/complete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ signatures: signatures }),
+          });
+        } catch (_e) {
+          /* Server notification is best-effort. */
+        }
       }
     }
 
     /** Load session data and initialize the page. */
     async function init() {
       try {
-        const resp = await fetch(`${API_BASE}/api/sign/${SESSION_ID}`);
-        if (!resp.ok) throw new Error("Session not found or expired.");
-
-        sessionData = await resp.json();
-        rpcUrl = sessionData.rpcUrl || rpcUrl;
-        renderMeta(sessionData.meta);
-        renderWallets();
-
-        document.getElementById("sign-btn").addEventListener("click", signAndSend);
+        if (PAGE.mode === "sign") {
+          await initSignMode();
+        } else {
+          await initLaunchMode();
+        }
       } catch (err) {
         showStatus("Failed to load session: " + err.message, "error");
         document.getElementById("wallet-card").classList.add("hidden");
         document.getElementById("meta-card").classList.add("hidden");
       }
+    }
+
+    /** Initialize pre-built signing mode. */
+    async function initSignMode() {
+      var resp = await fetch(API_BASE + "/api/sign/" + PAGE.sessionId);
+      if (!resp.ok) throw new Error("Session not found or expired.");
+
+      var data = await resp.json();
+      rpcUrl = data.rpcUrl || rpcUrl;
+      currentTransactions = data.transactions;
+      renderMeta(data.meta);
+      renderWallets();
+    }
+
+    /** Initialize two-phase launch mode. */
+    async function initLaunchMode() {
+      document.getElementById("phase-indicator").classList.remove("hidden");
+      document.getElementById("phase-label").classList.remove("hidden");
+      setPhase("connect");
+
+      var resp = await fetch(API_BASE + "/api/launch/" + PAGE.sessionId);
+      if (!resp.ok) throw new Error("Session not found or expired.");
+
+      var data = await resp.json();
+      rpcUrl = data.rpcUrl || rpcUrl;
+      renderMeta(data.meta);
+      renderWallets();
     }
 
     init();

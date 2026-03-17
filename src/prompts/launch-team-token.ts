@@ -8,7 +8,6 @@ const argsSchema = {
   tokenSymbol: z.string().describe("Token symbol (max 10 chars)"),
   tokenDescription: z.string().describe("Token description (max 1000 chars)"),
   imageUrl: z.string().optional().describe("Public URL for token image, or a text description to generate one"),
-  creatorWallet: z.string().describe("Creator's Base58 Solana wallet"),
   teamMembers: z.string().describe("Comma-separated 'platform:username:percentage' (e.g., 'twitter:alice:30,twitter:bob:20,twitter:DividendsBot:10'). Must sum to 100."),
   initialBuySol: z.string().default("0").describe("Initial buy amount in SOL"),
 };
@@ -22,7 +21,7 @@ export function registerLaunchTeamTokenPrompt(server: McpServer) {
     "bags_launch_team_token",
     "Guided workflow: launch a token with multi-party fee splits.",
     argsSchema,
-    ({ tokenName, tokenSymbol, tokenDescription, imageUrl, creatorWallet, teamMembers, initialBuySol }) => ({
+    ({ tokenName, tokenSymbol, tokenDescription, imageUrl, teamMembers, initialBuySol }) => ({
       messages: [{
         role: "user" as const,
         content: {
@@ -33,7 +32,6 @@ export function registerLaunchTeamTokenPrompt(server: McpServer) {
   Symbol: $${tokenSymbol}
   Description: ${tokenDescription}
   Image: ${imageUrl || "(not provided yet)"}
-  Wallet: ${creatorWallet}
   Team: ${teamMembers}
   Initial buy: ${initialBuySol} SOL
 
@@ -44,20 +42,22 @@ export function registerLaunchTeamTokenPrompt(server: McpServer) {
 Show them this summary in a clean format, including a breakdown of who gets what %.
 Ask: "Does this look right?"
 
-If they confirm, this is a two-signing-step process. Do NOT narrate tool names.
+If they confirm, this is a single-page process. Do NOT narrate tool names.
 
-STEP A — Set up (silent):
-  1. Parse team members. For each, if it is a social handle, resolve via bags_resolve_wallet. If already a Solana address, use directly.
+STEPS (silent):
+  1. Parse team members. For each, if it is a social handle, resolve via bags_resolve_wallet. If already a Solana address, use directly. Collect resolved wallet addresses and their BPS allocations.
   2. bags_create_token_info with the token details. Save both tokenMint and uri from the response.
-  3. bags_create_fee_config with payer=${creatorWallet}, baseMint from step 2, fee splits from step 1 (convert percentages to basis points internally — never show BPS to the user).
-  Open a signing page: call bags_open_signing_page with the fee config transactions, description "Fee setup for $${tokenSymbol}", and meta { Name: "${tokenName}", Symbol: "$${tokenSymbol}", Step: "Fee Config", Team: "${teamMembers}" }.
-  Give the user the signing link and say: "Click this link to sign your fee setup."
-  WAIT for the user to confirm they signed before continuing.
+  3. bags_open_launch_page with:
+     - tokenMint and uri from step 2
+     - claimersArray: resolved wallet addresses from step 1
+     - basisPointsArray: BPS values from step 1 (convert percentages to basis points internally — never show BPS to the user)
+     - initialBuySol: ${initialBuySol}
+     - description: "Launch $${tokenSymbol} (team token)"
+     - meta: { Name: "${tokenName}", Symbol: "$${tokenSymbol}", Team: "${teamMembers}", "Initial Buy": "${initialBuySol} SOL" }
 
-STEP B — Launch (silent):
-  4. bags_create_launch_tx with the uri + tokenMint from step 2, configKey from step 3, initialBuyLamports = ${initialBuySol} * 1e9.
-  Open a signing page: call bags_open_signing_page with the launch transaction, description "Launch $${tokenSymbol} (initial buy: ${initialBuySol} SOL)", and meta { Name: "${tokenName}", Symbol: "$${tokenSymbol}", Step: "Launch", "Initial Buy": "${initialBuySol} SOL" }.
-  Give the user the signing link and say: "Click this link to launch your coin."
+  Tell the user: "Click this link to launch your token. You'll connect your wallet and sign two quick transactions — fee setup and launch."
+
+  NOTE: The user's wallet address comes from the signing page when they connect — you do NOT need to ask for it. The wallet that connects will be the transaction payer.
 
 If any step fails, explain the error in plain language — no tool names, no jargon.`,
         },

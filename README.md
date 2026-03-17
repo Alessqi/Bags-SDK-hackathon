@@ -166,7 +166,8 @@ Requires `NOUS_API_KEY` (Hermes 4 for fast ops) and `ANTHROPIC_API_KEY` (Sonnet 
 # Required
 BAGS_API_KEY=                    # from dev.bags.fm
 
-# Optional
+# Optional — the public RPC works for browsing and quotes.
+# A private RPC (Helius free tier recommended) avoids rate limits on transaction sends.
 SOLANA_RPC_URL=                  # default: mainnet-beta
 BAGS_API_BASE=                   # default: https://public-api-v2.bags.fm/api/v1
 

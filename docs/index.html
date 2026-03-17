@@ -1111,13 +1111,24 @@ npm run build</code></pre>
   <h2>Signing Page</h2>
   <p>The SDK includes a built-in local signing page so users never need to copy-paste raw transaction data. When a transaction needs signing, the agent opens a localhost page where users connect their wallet and approve with one click.</p>
 
-  <h3>How it works</h3>
+  <h3>Two-phase launch flow</h3>
+  <p>For token launches, the signing page handles everything in one session — no wallet address needed in chat:</p>
   <ol>
-    <li>The agent calls <code>bags_open_signing_page</code> with unsigned transactions and token metadata.</li>
+    <li>The agent collects token details (name, symbol, description, image, fee split, initial buy) and creates token metadata.</li>
+    <li>The agent opens a launch page on <code>localhost:3141</code> with the token details. No wallet address required yet.</li>
+    <li>User clicks the link. The page auto-detects installed Solana wallets (Phantom, Solflare, Backpack, Coinbase).</li>
+    <li>User connects their wallet. The server builds fee config transactions using the connected wallet.</li>
+    <li>User signs the fee setup transactions. The server then builds the launch transaction.</li>
+    <li>User signs the launch transaction. The token is live.</li>
+  </ol>
+  <p>A three-dot phase indicator shows progress: Connect → Fee Setup → Launch.</p>
+
+  <h3>Pre-built signing flow</h3>
+  <p>For other transactions (swaps, claims, etc.), the agent can open a signing page with pre-built transactions:</p>
+  <ol>
+    <li>The agent calls the signing tool with unsigned transactions and metadata.</li>
     <li>A local server starts on <code>localhost:3141</code> (bound to 127.0.0.1 only) and returns a signing URL.</li>
-    <li>The agent gives the user the link. They click it, and the signing page opens in their browser.</li>
-    <li>The page auto-detects installed Solana wallets (Phantom, Solflare, Backpack, Coinbase).</li>
-    <li>User clicks their wallet, approves the transaction in the wallet popup, and the page broadcasts it to the network.</li>
+    <li>User clicks the link, connects their wallet, and signs.</li>
     <li>Confirmation and Solscan links appear on the page.</li>
   </ol>
 

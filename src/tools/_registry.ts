@@ -53,6 +53,7 @@ import { registerWalletBalance } from "./solana/balance.js";
 import { registerTokenHoldings } from "./solana/holdings.js";
 
 import { registerOpenSigningPage } from "./signing/open-signing-page.js";
+import { registerOpenLaunchPage } from "./signing/open-launch-page.js";
 import { registerToolCatalog } from "./meta/catalog.js";
 
 /**
@@ -111,5 +112,6 @@ export function registerAllTools(server: McpServer) {
   registerTokenHoldings(server);
 
   registerOpenSigningPage(server);
+  registerOpenLaunchPage(server);
   registerToolCatalog(server);
 }

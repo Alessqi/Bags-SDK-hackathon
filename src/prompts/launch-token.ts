@@ -8,7 +8,6 @@ const argsSchema = {
   tokenSymbol: z.string().describe("Token symbol (max 10 chars)"),
   tokenDescription: z.string().describe("Token description"),
   imageUrl: z.string().optional().describe("Public URL for token image, or a text description to generate one"),
-  creatorWallet: z.string().describe("Creator's Base58 Solana wallet"),
   initialBuySol: z.string().default("0").describe("Initial buy in SOL (optional)"),
 };
 
@@ -21,7 +20,7 @@ export function registerLaunchTokenPrompt(server: McpServer) {
     "bags_launch_token",
     "Guided workflow to launch a token on Bags.fm with a solo fee config.",
     argsSchema,
-    ({ tokenName, tokenSymbol, tokenDescription, imageUrl, creatorWallet, initialBuySol }) => ({
+    ({ tokenName, tokenSymbol, tokenDescription, imageUrl, initialBuySol }) => ({
       messages: [{
         role: "user" as const,
         content: {
@@ -32,7 +31,6 @@ export function registerLaunchTokenPrompt(server: McpServer) {
   Symbol: $${tokenSymbol}
   Description: ${tokenDescription}
   Image: ${imageUrl || "(not provided yet)"}
-  Wallet: ${creatorWallet}
   Fee split: 100% to creator
   Initial buy: ${initialBuySol} SOL
 
@@ -42,20 +40,21 @@ export function registerLaunchTokenPrompt(server: McpServer) {
 
 Show them this summary in a clean format and ask: "Does this look right?"
 
-If they confirm, this is a two-signing-step process. Do NOT narrate tool names.
+If they confirm, this is a single-page process. Do NOT narrate tool names.
 
-STEP A — Set up (silent):
-  1. If the wallet is a social handle (not a Base58 address), resolve it first. If already a Solana address, skip.
-  2. bags_create_token_info with the token details. Save both tokenMint and uri from the response.
-  3. bags_create_fee_config with payer=${creatorWallet}, baseMint from step 2, 100% to creator.
-  Open a signing page: call bags_open_signing_page with the fee config transactions, description "Fee setup for $${tokenSymbol}", and meta { Name: "${tokenName}", Symbol: "$${tokenSymbol}", Step: "Fee Config" }.
-  Give the user the signing link and say: "Click this link to sign your fee setup."
-  WAIT for the user to confirm they signed before continuing.
+STEPS (silent):
+  1. bags_create_token_info with the token details. Save both tokenMint and uri from the response.
+  2. bags_open_launch_page with:
+     - tokenMint and uri from step 1
+     - claimersArray: ["__CONNECTED_WALLET__"] (the signing page replaces this with the user's actual wallet)
+     - basisPointsArray: [10000] (100% to creator)
+     - initialBuySol: ${initialBuySol}
+     - description: "Launch $${tokenSymbol}"
+     - meta: { Name: "${tokenName}", Symbol: "$${tokenSymbol}", "Initial Buy": "${initialBuySol} SOL" }
 
-STEP B — Launch (silent):
-  4. bags_create_launch_tx with the uri + tokenMint from step 2, configKey from step 3, initialBuyLamports = ${initialBuySol} * 1e9.
-  Open a signing page: call bags_open_signing_page with the launch transaction, description "Launch $${tokenSymbol} (initial buy: ${initialBuySol} SOL)", and meta { Name: "${tokenName}", Symbol: "$${tokenSymbol}", Step: "Launch", "Initial Buy": "${initialBuySol} SOL" }.
-  Give the user the signing link and say: "Click this link to launch your coin."
+  Tell the user: "Click this link to launch your token. You'll connect your wallet and sign two quick transactions — fee setup and launch."
+
+  NOTE: The user's wallet address comes from the signing page when they connect — you do NOT need to ask for it.
 
 If any step fails, explain the error in plain language — no tool names, no jargon.`,
         },
