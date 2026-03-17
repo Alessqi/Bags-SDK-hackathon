@@ -3,7 +3,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-import { bagsPost } from "../../client/bags-rest.js";
+import { getBagsSDK } from "../../client/bags-sdk-wrapper.js";
 import { mcpError } from "../../utils/errors.js";
 import {
   TOKEN_NAME_MAX_LENGTH,
@@ -33,26 +33,22 @@ export function registerCreateTokenInfo(server: McpServer) {
     inputSchema,
     async ({ name, symbol, description, imageUrl, telegram, twitter, website }) => {
       try {
-        const body = {
+        const sdk = getBagsSDK();
+        const result = await sdk.tokenLaunch.createTokenInfoAndMetadata({
           name,
           symbol: symbol.toUpperCase(),
           description,
           imageUrl,
-          telegram: telegram ?? null,
-          twitter: twitter ?? null,
-          website: website ?? null,
-        };
-
-        const result = await bagsPost<CreateTokenInfoResponse>("/token-launch/create", body);
-        if (!result.success) {
-          return mcpError(new Error(result.error ?? "Failed to create token info"));
-        }
+          telegram: telegram ?? undefined,
+          twitter: twitter ?? undefined,
+          website: website ?? undefined,
+        });
 
         const output = {
-          tokenMint: result.response!.tokenMint,
-          tokenMetadata: result.response!.tokenMetadata,
-          uri: result.response!.tokenLaunch.uri,
-          status: result.response!.tokenLaunch.status,
+          tokenMint: result.tokenMint,
+          tokenMetadata: result.tokenMetadata,
+          uri: result.tokenLaunch.uri,
+          status: result.tokenLaunch.status,
           nextStep: "Use bags_create_fee_config with this tokenMint, then bags_create_launch_tx with the URI and configKey.",
         };
 

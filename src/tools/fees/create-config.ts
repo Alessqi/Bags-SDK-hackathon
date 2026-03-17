@@ -58,7 +58,7 @@ export function registerCreateFeeConfig(server: McpServer) {
         if (tipWallet) body.tipWallet = tipWallet;
         if (tipLamports) body.tipLamports = tipLamports;
 
-        const result = await bagsPost<CreateFeeShareConfigResponse>("/fee-share/create-config", body);
+        const result = await bagsPost<CreateFeeShareConfigResponse>("/fee-share/config", body);
         if (!result.success) {
           return mcpError(new Error(result.error ?? "Failed to create fee config"));
         }

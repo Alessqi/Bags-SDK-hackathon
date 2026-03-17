@@ -4,9 +4,10 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { bagsPost } from "../../client/bags-rest.js";
+import { getBagsSDK } from "../../client/bags-sdk-wrapper.js";
 import { mcpError } from "../../utils/errors.js";
 import { lamportsToSol } from "../../utils/formatting.js";
-import type { CreateTokenInfoResponse, CreateFeeShareConfigResponse } from "../../client/types.js";
+import type { CreateFeeShareConfigResponse } from "../../client/types.js";
 
 const inputSchema = {
   name: z.string().describe("Token name (max 32 chars)"),
@@ -36,23 +37,21 @@ export function registerLaunchTokenFull(server: McpServer) {
         const { name, symbol, description, imageUrl, wallet, claimersArray, basisPointsArray } = params;
         const initialBuyLamports = params.initialBuyLamports ?? 0;
 
-        const infoResult = await bagsPost<CreateTokenInfoResponse>("/token-launch/create", {
+        const sdk = getBagsSDK();
+        const infoResult = await sdk.tokenLaunch.createTokenInfoAndMetadata({
           name,
           symbol: symbol.toUpperCase(),
           description,
           imageUrl,
-          telegram: params.telegram ?? null,
-          twitter: params.twitter ?? null,
-          website: params.website ?? null,
+          telegram: params.telegram ?? undefined,
+          twitter: params.twitter ?? undefined,
+          website: params.website ?? undefined,
         });
-        if (!infoResult.success) {
-          return mcpError(new Error(`Token info creation failed: ${infoResult.error}`));
-        }
 
-        const tokenMint = infoResult.response!.tokenMint;
-        const uri = infoResult.response!.tokenLaunch.uri;
+        const tokenMint = infoResult.tokenMint;
+        const uri = infoResult.tokenLaunch.uri;
 
-        const configResult = await bagsPost<CreateFeeShareConfigResponse>("/fee-share/create-config", {
+        const configResult = await bagsPost<CreateFeeShareConfigResponse>("/fee-share/config", {
           payer: wallet,
           baseMint: tokenMint,
           claimersArray,
@@ -65,7 +64,7 @@ export function registerLaunchTokenFull(server: McpServer) {
         const configKey = configResult.response!.meteoraConfigKey;
         const feeConfigTxs = configResult.response!.transactions;
 
-        const launchResult = await bagsPost<{ transaction: string }>("/token-launch/transaction", {
+        const launchResult = await bagsPost<{ transaction: string }>("/token-launch/create-launch-transaction", {
           ipfs: uri,
           tokenMint,
           wallet,

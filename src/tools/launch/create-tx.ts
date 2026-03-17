@@ -38,7 +38,7 @@ export function registerCreateLaunchTx(server: McpServer) {
           ...(tipLamports && { tipLamports }),
         };
 
-        const result = await bagsPost<{ transaction: string }>("/token-launch/transaction", body);
+        const result = await bagsPost<{ transaction: string }>("/token-launch/create-launch-transaction", body);
         if (!result.success) {
           return mcpError(new Error(result.error ?? "Failed to create launch transaction"));
         }
