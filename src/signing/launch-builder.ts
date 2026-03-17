@@ -51,14 +51,26 @@ export async function buildFeeConfigTxs(
   }
 
   const result = await bagsPost<CreateFeeShareConfigResponse>("/fee-share/config", body);
+
+  console.error("[launch-builder] fee config raw result:", JSON.stringify(result).slice(0, 500));
+
   if (!result.success) {
     throw new Error(result.error ?? "Failed to create fee config");
   }
 
-  const resp = result.response!;
+  const resp = result.response;
+  if (!resp) {
+    throw new Error("Empty response from fee config API");
+  }
+
+  const txList = resp.transactions ?? [];
+  const extracted = Array.isArray(txList)
+    ? txList.map((t) => (typeof t === "string" ? t : t?.transaction)).filter(Boolean)
+    : [];
+
   return {
     meteoraConfigKey: resp.meteoraConfigKey,
-    transactions: resp.transactions.map((t) => t.transaction),
+    transactions: extracted as string[],
   };
 }
 
@@ -78,14 +90,29 @@ export async function buildLaunchTx(
   configKey: string,
   initialBuyLamports: number,
 ): Promise<LaunchTxResult> {
-  const result = await bagsPost<{ transaction: string }>(
+  const result = await bagsPost<Record<string, unknown>>(
     "/token-launch/create-launch-transaction",
     { ipfs, tokenMint, wallet, initialBuyLamports, configKey },
   );
+
+  console.error("[launch-builder] launch tx raw result:", JSON.stringify(result).slice(0, 500));
 
   if (!result.success) {
     throw new Error(result.error ?? "Failed to create launch transaction");
   }
 
-  return { transaction: result.response!.transaction };
+  const raw = result.response;
+  if (!raw) {
+    throw new Error("Empty response from launch transaction API");
+  }
+
+  const tx = typeof raw === "string"
+    ? raw
+    : (raw as Record<string, unknown>).transaction as string;
+
+  if (!tx) {
+    throw new Error("No transaction found in launch response");
+  }
+
+  return { transaction: tx };
 }

@@ -116,6 +116,31 @@ function registerSignRoutes(app: express.Express, pageHtml: string): void {
 }
 
 /**
+ * Skip the fee config signing and go straight to building the launch transaction.
+ * Used when the fee config already exists on-chain (zero transactions returned).
+ */
+async function skipToLaunchPhase(session: LaunchSession, res: express.Response): Promise<void> {
+  try {
+    const result = await buildLaunchTx(
+      session.wallet!, session.uri, session.tokenMint,
+      session.meteoraConfigKey!, session.initialBuyLamports,
+    );
+    session.launchTx = result.transaction;
+    session.phase = "launch";
+
+    const solAmount = session.initialBuyLamports / 1_000_000_000;
+    res.json({
+      phase: "launch",
+      transactions: [result.transaction],
+      description: `Fee config exists — launch ${session.meta.Symbol || "token"} (initial buy: ${solAmount} SOL)`,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: msg });
+  }
+}
+
+/**
  * Register routes for two-phase launch sessions (/launch/:id).
  */
 function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
@@ -163,8 +188,14 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
       session.wallet = wallet;
       session.meteoraConfigKey = result.meteoraConfigKey;
       session.feeConfigTxs = result.transactions;
-      session.phase = "fee_config";
 
+      if (result.transactions.length === 0) {
+        session.phase = "fee_config";
+        await skipToLaunchPhase(session, res);
+        return;
+      }
+
+      session.phase = "fee_config";
       res.json({
         phase: "fee_config",
         transactions: result.transactions,

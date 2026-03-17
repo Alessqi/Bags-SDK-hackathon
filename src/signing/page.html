@@ -304,7 +304,7 @@
   <div class="container">
     <div class="logo">
       <h1><span class="bags">Bags</span>.fm SDK</h1>
-      <span class="sub">Hackathon Project</span>
+      <span class="sub">Token Launcher</span>
     </div>
 
     <!-- Phase indicator (launch mode only) -->
@@ -327,8 +327,12 @@
       <div class="wallets" id="wallet-list"></div>
       <div id="no-wallets" class="hidden">
         No Solana wallets detected.<br>
-        Install <a href="https://phantom.app" target="_blank">Phantom</a> or
-        <a href="https://solflare.com" target="_blank">Solflare</a> to continue.
+        Install one to continue:<br>
+        <a href="https://phantom.app" target="_blank">Phantom</a> ·
+        <a href="https://solflare.com" target="_blank">Solflare</a> ·
+        <a href="https://backpack.app" target="_blank">Backpack</a> ·
+        <a href="https://trustwallet.com" target="_blank">Trust Wallet</a> ·
+        <a href="https://okx.com/web3" target="_blank">OKX</a>
       </div>
     </div>
 
@@ -364,10 +368,14 @@
     var currentTransactions = [];
 
     var KNOWN_WALLETS = [
-      { name: "Phantom",   check: function() { return window.phantom?.solana; },   icon: "https://phantom.app/img/phantom-logo.svg" },
-      { name: "Solflare",  check: function() { return window.solflare; },          icon: "https://solflare.com/favicon.ico" },
-      { name: "Backpack",  check: function() { return window.backpack; },          icon: "https://backpack.app/favicon.ico" },
-      { name: "Coinbase",  check: function() { return window.coinbaseSolana; },    icon: "https://www.coinbase.com/favicon.ico" },
+      { name: "Phantom",       check: function() { return window.phantom?.solana; },                        icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128' fill='none'%3E%3Crect width='128' height='128' rx='26' fill='%23AB9FF2'/%3E%3Cpath d='M110.584 64.914h-7.117c0-24.84-20.321-44.97-45.4-44.97-24.772 0-44.9 19.693-45.39 44.144-.503 25.097 20.57 46.796 45.834 46.796h2.049c22.212 0 42.127-14.478 49.085-35.608a4.288 4.288 0 00-4.06-5.768h-.001zm-73.894 7.16a5.393 5.393 0 01-5.4 5.38 5.393 5.393 0 01-5.4-5.38 5.393 5.393 0 015.4-5.38 5.393 5.393 0 015.4 5.38zm22.2 0a5.393 5.393 0 01-5.4 5.38 5.393 5.393 0 01-5.4-5.38 5.393 5.393 0 015.4-5.38 5.393 5.393 0 015.4 5.38z' fill='%23FFF'/%3E%3C/svg%3E" },
+      { name: "Solflare",      check: function() { return window.solflare; },                               icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23FC7227'/%3E%3Cpath d='M64 28l28 36-28 36-28-36z' fill='%23FFF'/%3E%3C/svg%3E" },
+      { name: "Backpack",      check: function() { return window.backpack; },                               icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23E33E3F'/%3E%3Cpath d='M44 48h40v40H44z' rx='8' fill='%23FFF'/%3E%3Cpath d='M52 36h24v16H52z' rx='4' fill='%23FFF'/%3E%3C/svg%3E" },
+      { name: "Coinbase",      check: function() { return window.coinbaseSolana; },                         icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%230052FF'/%3E%3Ccircle cx='64' cy='64' r='32' fill='%23FFF'/%3E%3Ccircle cx='64' cy='64' r='16' fill='%230052FF'/%3E%3C/svg%3E" },
+      { name: "Trust Wallet",  check: function() { return window.trustwallet?.solana; },                    icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%230500FF'/%3E%3Cpath d='M64 28c16 12 28 8 28 8s-4 40-28 64C40 76 36 36 36 36s12 4 28-8z' fill='%23FFF'/%3E%3C/svg%3E" },
+      { name: "Brave",         check: function() { return window.braveSolana || window.brave?.solana; },    icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23FB542B'/%3E%3Cpath d='M64 24l28 16v40L64 104 36 80V40z' fill='%23FFF'/%3E%3C/svg%3E" },
+      { name: "Exodus",        check: function() { return window.exodus?.solana; },                         icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%231F1B4D'/%3E%3Cpath d='M36 44h56l-20 20 20 20H36l20-20z' fill='%238B6CDF'/%3E%3C/svg%3E" },
+      { name: "OKX",           check: function() { return window.okxwallet?.solana; },                      icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23000'/%3E%3Crect x='28' y='28' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='72' y='28' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='50' y='50' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='28' y='72' width='28' height='28' rx='4' fill='%23FFF'/%3E%3Crect x='72' y='72' width='28' height='28' rx='4' fill='%23FFF'/%3E%3C/svg%3E" },
     ];
 
     /** Detect page mode from URL path. */
@@ -560,12 +568,22 @@
 
         clearInfoStatuses();
         currentTransactions = data.transactions;
-        setPhase("fee_config");
-        showSignCard(
-          data.transactions.length + " fee setup transaction" + (data.transactions.length > 1 ? "s" : "") + " to sign.",
-          "Sign Fee Setup"
-        );
-        document.getElementById("sign-btn").onclick = function() { signAndSend("fee_config"); };
+
+        if (data.phase === "launch") {
+          setPhase("launch");
+          showSignCard(
+            data.description || "Launch transaction ready.",
+            "Launch Token"
+          );
+          document.getElementById("sign-btn").onclick = function() { signAndSend("launch"); };
+        } else {
+          setPhase("fee_config");
+          showSignCard(
+            data.transactions.length + " fee setup transaction" + (data.transactions.length > 1 ? "s" : "") + " to sign.",
+            "Sign Fee Setup"
+          );
+          document.getElementById("sign-btn").onclick = function() { signAndSend("fee_config"); };
+        }
       } catch (err) {
         clearInfoStatuses();
         showStatus("Failed to build transactions: " + err.message, "error");
