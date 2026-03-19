@@ -7,9 +7,9 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { buildFeeConfigTxs, buildLaunchTx } from "./launch-builder.js";
+import { getSession, setSession } from "./session-store.js";
 
 const SIGNING_PORT = 3141;
-const SESSION_TTL_MS = 600_000;
 /** Placeholder for claimersArray entries that should be replaced with the connected wallet. */
 export const WALLET_PLACEHOLDER = "__CONNECTED_WALLET__";
 
@@ -75,20 +75,7 @@ interface ScoutSession {
 
 type Session = SigningSession | LaunchSession | ScoutSession;
 
-const sessions = new Map<string, Session>();
 let serverRunning = false;
-
-/**
- * Remove expired sessions older than SESSION_TTL_MS.
- */
-function pruneExpired(): void {
-  const now = Date.now();
-  for (const [id, session] of sessions) {
-    if (now - session.createdAt > SESSION_TTL_MS) {
-      sessions.delete(id);
-    }
-  }
-}
 
 /**
  * Resolve the HTML page path relative to this module.
@@ -124,8 +111,7 @@ function registerSignRoutes(app: express.Express, pageHtml: string): void {
   });
 
   app.get("/api/sign/:sessionId", (req, res) => {
-    pruneExpired();
-    const session = sessions.get(req.params.sessionId);
+    const session = getSession<SigningSession>(req.params.sessionId);
     if (!session || session.type !== "sign") {
       res.status(404).json({ error: "Session not found or expired." });
       return;
@@ -139,13 +125,14 @@ function registerSignRoutes(app: express.Express, pageHtml: string): void {
   });
 
   app.post("/api/sign/:sessionId/complete", (req, res) => {
-    const session = sessions.get(req.params.sessionId);
+    const session = getSession<SigningSession>(req.params.sessionId);
     if (!session || session.type !== "sign") {
       res.status(404).json({ error: "Session not found." });
       return;
     }
     session.signatures = req.body.signatures || [];
     session.complete = true;
+    setSession(req.params.sessionId, session);
     res.json({ ok: true });
   });
 }
@@ -162,6 +149,7 @@ async function skipToLaunchPhase(session: LaunchSession, res: express.Response):
     );
     session.launchTx = result.transaction;
     session.phase = "launch";
+    setSession(session.id, session);
 
     const solAmount = session.initialBuyLamports / 1_000_000_000;
     res.json({
@@ -184,8 +172,7 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
   });
 
   app.get("/api/launch/:sessionId", (req, res) => {
-    pruneExpired();
-    const session = sessions.get(req.params.sessionId);
+    const session = getSession<LaunchSession>(req.params.sessionId);
     if (!session || session.type !== "launch") {
       res.status(404).json({ error: "Session not found or expired." });
       return;
@@ -199,7 +186,7 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
   });
 
   app.post("/api/launch/:sessionId/connect", async (req, res) => {
-    const session = sessions.get(req.params.sessionId);
+    const session = getSession<LaunchSession>(req.params.sessionId);
     if (!session || session.type !== "launch") {
       res.status(404).json({ error: "Session not found." });
       return;
@@ -230,11 +217,13 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
 
       if (result.transactions.length === 0) {
         session.phase = "fee_config";
+        setSession(req.params.sessionId, session);
         await skipToLaunchPhase(session, res);
         return;
       }
 
       session.phase = "fee_config";
+      setSession(req.params.sessionId, session);
       res.json({
         phase: "fee_config",
         transactions: result.transactions,
@@ -247,7 +236,7 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
   });
 
   app.post("/api/launch/:sessionId/fee-signed", async (req, res) => {
-    const session = sessions.get(req.params.sessionId);
+    const session = getSession<LaunchSession>(req.params.sessionId);
     if (!session || session.type !== "launch") {
       res.status(404).json({ error: "Session not found." });
       return;
@@ -266,6 +255,7 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
       );
       session.launchTx = result.transaction;
       session.phase = "launch";
+      setSession(req.params.sessionId, session);
 
       const solAmount = session.initialBuyLamports / 1_000_000_000;
       res.json({
@@ -280,13 +270,14 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
   });
 
   app.post("/api/launch/:sessionId/complete", (req, res) => {
-    const session = sessions.get(req.params.sessionId);
+    const session = getSession<LaunchSession>(req.params.sessionId);
     if (!session || session.type !== "launch") {
       res.status(404).json({ error: "Session not found." });
       return;
     }
     session.signatures.push(...(req.body.signatures || []));
     session.phase = "complete";
+    setSession(req.params.sessionId, session);
     res.json({ ok: true });
   });
 }
@@ -303,8 +294,7 @@ function registerScoutRoutes(app: express.Express): void {
   });
 
   app.get("/api/scout/:sessionId", (req, res) => {
-    pruneExpired();
-    const session = sessions.get(req.params.sessionId);
+    const session = getSession<ScoutSession>(req.params.sessionId);
     if (!session || session.type !== "scout") {
       res.status(404).json({ error: "Session not found or expired." });
       return;
@@ -324,7 +314,7 @@ function registerScoutRoutes(app: express.Express): void {
   });
 
   app.post("/api/scout/:sessionId/regenerate", async (req, res) => {
-    const session = sessions.get(req.params.sessionId);
+    const session = getSession<ScoutSession>(req.params.sessionId);
     if (!session || session.type !== "scout") {
       res.status(404).json({ error: "Session not found." });
       return;
@@ -345,6 +335,7 @@ function registerScoutRoutes(app: express.Express): void {
         return;
       }
       session.imageUrl = result.url;
+      setSession(req.params.sessionId, session);
       res.json({ imageUrl: result.url });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -353,7 +344,7 @@ function registerScoutRoutes(app: express.Express): void {
   });
 
   app.post("/api/scout/:sessionId/approve", async (req, res) => {
-    const session = sessions.get(req.params.sessionId);
+    const session = getSession<ScoutSession>(req.params.sessionId);
     if (!session || session.type !== "scout") {
       res.status(404).json({ error: "Session not found." });
       return;
@@ -397,6 +388,7 @@ function registerScoutRoutes(app: express.Express): void {
           wallet, session.uri!, session.tokenMint!,
           session.meteoraConfigKey!, buyLamports,
         );
+        setSession(req.params.sessionId, session);
         res.json({
           phase: "launch",
           transactions: [launchResult.transaction],
@@ -406,6 +398,7 @@ function registerScoutRoutes(app: express.Express): void {
       }
 
       session.phase = "fee_config";
+      setSession(req.params.sessionId, session);
       res.json({
         phase: "fee_config",
         transactions: feeResult.transactions,
@@ -418,7 +411,7 @@ function registerScoutRoutes(app: express.Express): void {
   });
 
   app.post("/api/scout/:sessionId/fee-signed", async (req, res) => {
-    const session = sessions.get(req.params.sessionId);
+    const session = getSession<ScoutSession>(req.params.sessionId);
     if (!session || session.type !== "scout") {
       res.status(404).json({ error: "Session not found." });
       return;
@@ -436,6 +429,7 @@ function registerScoutRoutes(app: express.Express): void {
         session.meteoraConfigKey!, session.initialBuyLamports,
       );
       session.phase = "launch";
+      setSession(req.params.sessionId, session);
       const solAmount = session.initialBuyLamports / 1_000_000_000;
       res.json({
         phase: "launch",
@@ -449,13 +443,14 @@ function registerScoutRoutes(app: express.Express): void {
   });
 
   app.post("/api/scout/:sessionId/complete", (req, res) => {
-    const session = sessions.get(req.params.sessionId);
+    const session = getSession<ScoutSession>(req.params.sessionId);
     if (!session || session.type !== "scout") {
       res.status(404).json({ error: "Session not found." });
       return;
     }
     session.signatures.push(...(req.body.signatures || []));
     session.phase = "complete";
+    setSession(req.params.sessionId, session);
     res.json({ ok: true });
   });
 }
@@ -491,12 +486,11 @@ export function createSigningSession(
   meta: Record<string, string>,
 ): string {
   startSigningServer();
-  pruneExpired();
 
   const id = randomUUID();
   const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
 
-  sessions.set(id, {
+  setSession(id, {
     type: "sign",
     id,
     transactions,
@@ -529,12 +523,11 @@ export interface LaunchSessionParams {
  */
 export function createLaunchSession(params: LaunchSessionParams): string {
   startSigningServer();
-  pruneExpired();
 
   const id = randomUUID();
   const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
 
-  sessions.set(id, {
+  setSession(id, {
     type: "launch",
     id,
     tokenMint: params.tokenMint,
@@ -579,12 +572,11 @@ export interface ScoutSessionParams {
  */
 export function createScoutSession(params: ScoutSessionParams): string {
   startSigningServer();
-  pruneExpired();
 
   const id = randomUUID();
   const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
 
-  sessions.set(id, {
+  setSession(id, {
     type: "scout",
     id,
     name: params.name,
@@ -618,7 +610,7 @@ export function createScoutSession(params: ScoutSessionParams): string {
  * @returns The session if complete, null otherwise.
  */
 export function getSessionStatus(sessionId: string): Session | null {
-  const session = sessions.get(sessionId);
+  const session = getSession<Session>(sessionId);
   if (!session) return null;
   if (session.type === "sign") return session.complete ? session : null;
   return session.phase === "complete" ? session : null;
