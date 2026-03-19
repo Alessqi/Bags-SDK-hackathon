@@ -16,7 +16,6 @@
   --accent-dim: rgba(0,255,65,0.15);
   --danger: #ff4444;
   --danger-dim: rgba(255,68,68,0.15);
-  --warn: #ffaa00;
   --radius: 14px;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -66,6 +65,7 @@ body {
   border-radius: var(--radius);
   overflow: hidden;
   margin-bottom: 16px;
+  position: relative;
 }
 .preview-image {
   width: 100%;
@@ -97,7 +97,6 @@ body {
   gap: 12px;
   z-index: 2;
 }
-.preview-card { position: relative; }
 .big-spinner {
   width: 48px; height: 48px;
   border: 4px solid var(--border);
@@ -143,6 +142,77 @@ body {
   line-height: 1.5;
 }
 
+/* SOL amount picker */
+.sol-picker {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.sol-picker h3 {
+  font-size: 13px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+.sol-presets {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.sol-preset {
+  flex: 1;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.2s, background 0.2s;
+}
+.sol-preset:hover { border-color: var(--accent); }
+.sol-preset.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+.sol-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+  margin-bottom: 8px;
+}
+.sol-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.sol-slider::-moz-range-thumb {
+  width: 20px; height: 20px;
+  background: var(--accent);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.sol-display {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
 /* Buttons */
 .btn-row {
   display: flex;
@@ -170,44 +240,6 @@ body {
   background: var(--danger-dim);
   color: var(--danger);
   border: 1px solid var(--danger);
-}
-.btn-launch {
-  background: var(--accent);
-  color: #000;
-  width: 100%;
-}
-
-/* Feedback input */
-.feedback-section {
-  display: none;
-  margin-bottom: 16px;
-}
-.feedback-section.visible { display: block; }
-.feedback-input {
-  width: 100%;
-  padding: 12px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-  font-family: inherit;
-  font-size: 13px;
-  resize: none;
-  outline: none;
-  margin-bottom: 8px;
-}
-.feedback-input:focus { border-color: var(--accent); }
-.btn-submit-regen {
-  padding: 10px 20px;
-  background: var(--warn);
-  color: #000;
-  border: none;
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  width: 100%;
 }
 
 /* Wallet picker */
@@ -279,7 +311,7 @@ body {
 
   <div id="statusBar" class="status"></div>
 
-  <!-- Phase 1: Image preview -->
+  <!-- Phase 1: Preview (image + info + SOL picker + buttons) -->
   <div id="previewPhase">
     <div class="preview-card">
       <img id="previewImage" class="preview-image" style="display:none" alt="Token logo preview">
@@ -288,14 +320,21 @@ body {
 
     <div class="info-card" id="tokenInfo"></div>
 
+    <div class="sol-picker" id="solPicker" style="display:none">
+      <h3>Initial Buy</h3>
+      <div class="sol-presets">
+        <button class="sol-preset" data-sol="0">0 SOL</button>
+        <button class="sol-preset" data-sol="0.1">0.1 SOL</button>
+        <button class="sol-preset" data-sol="0.5">0.5 SOL</button>
+        <button class="sol-preset" data-sol="1">1 SOL</button>
+      </div>
+      <input type="range" class="sol-slider" id="solSlider" min="0" max="2" step="0.01" value="0">
+      <div class="sol-display" id="solDisplay">0 SOL</div>
+    </div>
+
     <div class="btn-row" id="approveRow" style="display:none">
       <button class="btn btn-approve" id="btnApprove">Approve & Launch</button>
       <button class="btn btn-regen" id="btnRegen">Regenerate</button>
-    </div>
-
-    <div class="feedback-section" id="feedbackSection">
-      <textarea class="feedback-input" id="feedbackInput" rows="3" placeholder="What should change? (e.g. 'make it more cartoon-like', 'use red instead of blue')"></textarea>
-      <button class="btn-submit-regen" id="btnSubmitRegen">Regenerate with Feedback</button>
     </div>
   </div>
 
@@ -307,7 +346,7 @@ body {
     <div class="wallet-grid" id="walletGrid"></div>
   </div>
 
-  <!-- Phase 3: Signing (reuses launch page logic) -->
+  <!-- Phase 3: Signing -->
   <div id="signPhase" style="display:none">
     <div class="info-card" style="text-align:center">
       <p style="font-weight:700">Sign the transactions in your wallet</p>
@@ -316,19 +355,25 @@ body {
   </div>
 </div>
 
+<script src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
 <script>
-const SESSION_ID = window.location.pathname.split('/').pop();
+var SESSION_ID = window.location.pathname.split('/').pop();
 const API_BASE = `/api/scout/${SESSION_ID}`;
 
 let sessionData = null;
 let connectedWallet = null;
 let walletProvider = null;
+let selectedSol = 0;
 
-const WALLETS = [
-  { name: 'Phantom', detect: () => window.phantom?.solana, get: () => window.phantom.solana },
-  { name: 'Solflare', detect: () => window.solflare, get: () => window.solflare },
-  { name: 'Backpack', detect: () => window.backpack, get: () => window.backpack },
-  { name: 'Coinbase', detect: () => window.coinbaseSolana, get: () => window.coinbaseSolana },
+var WALLETS = [
+  { name: 'Phantom',      detect: function() { return window.phantom?.solana || (window.solana && window.solana.isPhantom && window.solana); } },
+  { name: 'Solflare',     detect: function() { return window.solflare; } },
+  { name: 'Backpack',     detect: function() { return window.backpack; } },
+  { name: 'Coinbase',     detect: function() { return window.coinbaseSolana; } },
+  { name: 'Trust Wallet', detect: function() { return window.trustwallet?.solana; } },
+  { name: 'Brave',        detect: function() { return window.braveSolana || window.brave?.solana; } },
+  { name: 'Exodus',       detect: function() { return window.exodus?.solana; } },
+  { name: 'OKX',          detect: function() { return window.okxwallet?.solana; } },
 ];
 
 /* ── Init ── */
@@ -339,6 +384,7 @@ async function init() {
     sessionData = await res.json();
     renderTokenInfo();
     renderImage();
+    initSolPicker();
   } catch (e) {
     showStatus('Session expired or not found.', 'error');
   }
@@ -378,16 +424,68 @@ function renderImage() {
   }
 }
 
-/* ── Approve ── */
+/* ── SOL Picker ── */
+function initSolPicker() {
+  const picker = document.getElementById('solPicker');
+  picker.style.display = 'block';
+
+  const slider = document.getElementById('solSlider');
+  const display = document.getElementById('solDisplay');
+  const presets = document.querySelectorAll('.sol-preset');
+
+  function updateSol(val) {
+    selectedSol = parseFloat(val);
+    display.textContent = selectedSol + ' SOL';
+    slider.value = selectedSol;
+    presets.forEach(btn => {
+      btn.classList.toggle('active', parseFloat(btn.dataset.sol) === selectedSol);
+    });
+  }
+
+  slider.addEventListener('input', (e) => updateSol(e.target.value));
+  presets.forEach(btn => {
+    btn.addEventListener('click', () => updateSol(btn.dataset.sol));
+  });
+}
+
+/* ── Approve → go to wallet phase ── */
 document.getElementById('btnApprove').onclick = () => {
   setPhase('wallet');
   detectWallets();
 };
 
-/* ── Regenerate ── */
-document.getElementById('btnRegen').onclick = () => {
-  document.getElementById('feedbackSection').classList.add('visible');
-  document.getElementById('approveRow').style.display = 'none';
+/* ── Regenerate: just re-run the prompt, no textarea ── */
+document.getElementById('btnRegen').onclick = async () => {
+  const btn = document.getElementById('btnRegen');
+  btn.disabled = true;
+  btn.textContent = 'Regenerating...';
+  showImageLoading();
+
+  try {
+    const res = await fetch(`${API_BASE}/regenerate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Regeneration failed');
+
+    sessionData.imageUrl = data.imageUrl;
+    removeImageOverlay();
+
+    const img = document.getElementById('previewImage');
+    img.src = data.imageUrl;
+    img.style.display = 'block';
+    document.getElementById('previewPlaceholder').style.display = 'none';
+    document.getElementById('approveRow').style.display = 'flex';
+    hideStatus();
+  } catch (e) {
+    removeImageOverlay();
+    showStatus(e.message, 'error');
+    document.getElementById('approveRow').style.display = 'flex';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Regenerate';
 };
 
 function showImageLoading() {
@@ -409,127 +507,127 @@ function removeImageOverlay() {
   if (existing) existing.remove();
 }
 
-document.getElementById('btnSubmitRegen').onclick = async () => {
-  const feedback = document.getElementById('feedbackInput').value.trim();
-  document.getElementById('btnSubmitRegen').disabled = true;
-  document.getElementById('btnSubmitRegen').textContent = 'Generating...';
-  document.getElementById('feedbackSection').classList.remove('visible');
-  showImageLoading();
-
-  try {
-    const res = await fetch(`${API_BASE}/regenerate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ feedback }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Regeneration failed');
-
-    sessionData.imageUrl = data.imageUrl;
-    removeImageOverlay();
-
-    const img = document.getElementById('previewImage');
-    img.src = data.imageUrl;
-    img.style.display = 'block';
-    document.getElementById('previewPlaceholder').style.display = 'none';
-    document.getElementById('approveRow').style.display = 'flex';
-    document.getElementById('feedbackInput').value = '';
-    hideStatus();
-  } catch (e) {
-    removeImageOverlay();
-    showStatus(e.message, 'error');
-    document.getElementById('approveRow').style.display = 'flex';
-  }
-  document.getElementById('btnSubmitRegen').disabled = false;
-  document.getElementById('btnSubmitRegen').textContent = 'Regenerate with Feedback';
-};
-
 /* ── Wallet Connect ── */
 function detectWallets() {
-  const grid = document.getElementById('walletGrid');
+  var grid = document.getElementById('walletGrid');
   grid.innerHTML = '';
-  let found = 0;
-  for (const w of WALLETS) {
-    if (w.detect()) {
+  var found = 0;
+  for (var i = 0; i < WALLETS.length; i++) {
+    var w = WALLETS[i];
+    try {
+      var provider = w.detect();
+      if (!provider) continue;
       found++;
-      const btn = document.createElement('button');
+      var btn = document.createElement('button');
       btn.className = 'wallet-btn';
       btn.textContent = w.name;
-      btn.onclick = () => connectWallet(w);
+      btn.addEventListener('click', (function(name, prov) {
+        return function() { connectWallet(name, prov); };
+      })(w.name, provider));
       grid.appendChild(btn);
+    } catch (_) {
+      /* wallet detection threw — skip */
     }
   }
   if (!found) {
-    grid.innerHTML = '<p style="color:var(--dim); text-align:center; grid-column:1/-1; padding:20px">No Solana wallet detected. Install Phantom, Solflare, or Backpack.</p>';
+    grid.innerHTML = '<p style="color:var(--dim); text-align:center; grid-column:1/-1; padding:20px; line-height:1.8">' +
+      'No Solana wallets detected.<br>' +
+      '<a href="https://phantom.app" target="_blank" style="color:var(--accent)">Phantom</a> · ' +
+      '<a href="https://solflare.com" target="_blank" style="color:var(--accent)">Solflare</a> · ' +
+      '<a href="https://backpack.app" target="_blank" style="color:var(--accent)">Backpack</a> · ' +
+      '<a href="https://trustwallet.com" target="_blank" style="color:var(--accent)">Trust Wallet</a> · ' +
+      '<a href="https://okx.com/web3" target="_blank" style="color:var(--accent)">OKX</a>' +
+      '</p>';
   }
 }
 
-async function connectWallet(w) {
-  showStatus('<span class="spinner"></span> Connecting wallet...', 'loading');
+async function connectWallet(name, provider) {
+  showStatus('<span class="spinner"></span> Connecting ' + name + '...', 'loading');
   try {
-    const provider = w.get();
-    if (provider.connect) await provider.connect();
-    const pubkey = provider.publicKey?.toBase58?.() || provider.publicKey?.toString?.();
-    if (!pubkey) throw new Error('Could not read public key');
+    var resp = await provider.connect({ onlyIfTrusted: false });
+    var pubkey = (resp.publicKey && resp.publicKey.toString()) || (provider.publicKey && provider.publicKey.toString());
+    if (!pubkey) throw new Error('Could not read public key from ' + name);
 
     connectedWallet = pubkey;
     walletProvider = provider;
+    var shortAddr = pubkey.slice(0, 4) + '...' + pubkey.slice(-4);
+    showStatus('Connected to ' + name + ' (' + shortAddr + '). Building transactions...', 'info');
 
-    const res = await fetch(`${API_BASE}/approve`, {
+    var initialBuyLamports = Math.round(selectedSol * 1_000_000_000);
+    showStatus('Building fee setup transactions...', 'loading');
+    var res = await fetch(API_BASE + '/approve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ wallet: pubkey }),
+      body: JSON.stringify({ wallet: pubkey, initialBuyLamports: initialBuyLamports }),
     });
-    const data = await res.json();
+    var data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Approval failed');
 
     setPhase('sign');
-    await signTransactions(data.transactions, data.description);
+
+    if (data.phase === 'fee_config') {
+      showStatus('Sign fee setup (' + data.transactions.length + ' tx)...', 'loading');
+      var feeSigs = await signTransactions(data.transactions, data.description);
+
+      showStatus('Building launch transaction...', 'loading');
+      var feeRes = await fetch(API_BASE + '/fee-signed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signatures: feeSigs }),
+      });
+      var launchData = await feeRes.json();
+      if (!feeRes.ok) throw new Error(launchData.error || 'Failed to build launch tx');
+
+      showStatus('Sign launch transaction...', 'loading');
+      var launchSigs = await signTransactions(launchData.transactions, launchData.description);
+      await postComplete([...feeSigs, ...launchSigs]);
+    } else {
+      var sigs = await signTransactions(data.transactions, data.description);
+      await postComplete(sigs);
+    }
   } catch (e) {
-    showStatus(e.message, 'error');
+    showStatus(name + ' error: ' + e.message, 'error');
   }
 }
 
 /* ── Signing ── */
 async function signTransactions(txsBase58, description) {
   document.getElementById('signDesc').textContent = description || 'Confirm in your wallet';
-  showStatus('<span class="spinner"></span> Waiting for wallet signature...', 'loading');
 
-  try {
-    const signatures = [];
-    for (const txB58 of txsBase58) {
-      const txBytes = base58Decode(txB58);
-      const { VersionedTransaction } = await getSolanaWeb3();
-      const tx = VersionedTransaction.deserialize(txBytes);
-      const signed = await walletProvider.signTransaction(tx);
-      const raw = signed.serialize();
+  var signatures = [];
+  for (var i = 0; i < txsBase58.length; i++) {
+    showStatus('Signing transaction ' + (i + 1) + '/' + txsBase58.length + '...', 'loading');
+    var txBytes = base58Decode(txsBase58[i]);
+    var tx = solanaWeb3.VersionedTransaction.deserialize(txBytes);
+    var signed = await walletProvider.signTransaction(tx);
+    var raw = signed.serialize();
 
-      const rpcUrl = sessionData.rpcUrl || 'https://api.mainnet-beta.solana.com';
-      const sendRes = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0', id: 1,
-          method: 'sendTransaction',
-          params: [btoa(String.fromCharCode(...raw)), { encoding: 'base64' }],
-        }),
-      });
-      const sendData = await sendRes.json();
-      if (sendData.error) throw new Error(sendData.error.message);
-      signatures.push(sendData.result);
-    }
-
-    await fetch(`${API_BASE}/complete`, {
+    var rpcUrl = sessionData.rpcUrl || 'https://api.mainnet-beta.solana.com';
+    var sendRes = await fetch(rpcUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ signatures }),
+      body: JSON.stringify({
+        jsonrpc: '2.0', id: 1,
+        method: 'sendTransaction',
+        params: [btoa(String.fromCharCode.apply(null, raw)), { encoding: 'base64' }],
+      }),
     });
-
-    setPhase('done');
-    showStatus('Token launched! Transaction confirmed.', 'info');
-  } catch (e) {
-    showStatus('Signing failed: ' + e.message, 'error');
+    var sendData = await sendRes.json();
+    if (sendData.error) throw new Error(sendData.error.message);
+    signatures.push(sendData.result);
+    showStatus('Transaction ' + (i + 1) + '/' + txsBase58.length + ' confirmed.', 'info');
   }
+  return signatures;
+}
+
+async function postComplete(signatures) {
+  await fetch(API_BASE + '/complete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ signatures: signatures }),
+  });
+  setPhase('done');
+  showStatus('Token launched! Transaction confirmed.', 'info');
 }
 
 /* ── Helpers ── */
@@ -556,28 +654,29 @@ function hideStatus() {
   document.getElementById('statusBar').className = 'status';
 }
 
-/* Base58 decoder */
-const B58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+/* Base58 decoder (same as launch page) */
 function base58Decode(str) {
-  const map = {};
-  for (let i = 0; i < 58; i++) map[B58_ALPHABET[i]] = BigInt(i);
-  let num = 0n;
-  for (const c of str) num = num * 58n + map[c];
-  const hex = num.toString(16).padStart(2, '0');
-  const raw = new Uint8Array(hex.match(/.{2}/g).map(h => parseInt(h, 16)));
-  let zeros = 0;
-  for (const c of str) { if (c === '1') zeros++; else break; }
-  const result = new Uint8Array(zeros + raw.length);
-  result.set(raw, zeros);
-  return result;
-}
-
-/* Lazy load solana web3 */
-let _solanaWeb3;
-async function getSolanaWeb3() {
-  if (_solanaWeb3) return _solanaWeb3;
-  _solanaWeb3 = await import('https://esm.sh/@solana/web3.js@1.98.0');
-  return _solanaWeb3;
+  var ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+  var bytes = [0];
+  for (var ci = 0; ci < str.length; ci++) {
+    var idx = ALPHABET.indexOf(str[ci]);
+    if (idx === -1) throw new Error("Invalid base58 character: " + str[ci]);
+    var carry = idx;
+    for (var j = 0; j < bytes.length; j++) {
+      carry += bytes[j] * 58;
+      bytes[j] = carry & 0xff;
+      carry >>= 8;
+    }
+    while (carry > 0) {
+      bytes.push(carry & 0xff);
+      carry >>= 8;
+    }
+  }
+  for (var li = 0; li < str.length; li++) {
+    if (str[li] !== "1") break;
+    bytes.push(0);
+  }
+  return new Uint8Array(bytes.reverse());
 }
 
 init();

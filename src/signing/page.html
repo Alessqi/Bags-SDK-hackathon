@@ -252,6 +252,78 @@
       color: var(--accent);
     }
 
+    /* SOL amount picker */
+    .sol-picker {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .sol-picker h2 {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+    .sol-presets {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .sol-preset {
+      flex: 1;
+      padding: 0.6rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .sol-preset:hover { border-color: var(--accent); }
+    .sol-preset.active {
+      border-color: var(--accent);
+      background: rgba(0, 214, 43, 0.1);
+      color: var(--accent);
+    }
+    .sol-slider {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      outline: none;
+      margin-bottom: 0.5rem;
+    }
+    .sol-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      background: var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .sol-slider::-moz-range-thumb {
+      width: 20px; height: 20px;
+      background: var(--accent);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .sol-display {
+      text-align: center;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
     .phase-indicator {
       display: flex;
       justify-content: center;
@@ -321,6 +393,19 @@
       <div id="meta-rows"></div>
     </div>
 
+    <!-- SOL amount picker (launch mode only) -->
+    <div class="sol-picker hidden" id="sol-picker">
+      <h2>Initial Buy</h2>
+      <div class="sol-presets">
+        <button class="sol-preset" data-sol="0">0 SOL</button>
+        <button class="sol-preset" data-sol="0.1">0.1 SOL</button>
+        <button class="sol-preset" data-sol="0.5">0.5 SOL</button>
+        <button class="sol-preset" data-sol="1">1 SOL</button>
+      </div>
+      <input type="range" class="sol-slider" id="sol-slider" min="0" max="2" step="0.01" value="0">
+      <div class="sol-display" id="sol-display">0 SOL</div>
+    </div>
+
     <!-- Step 1: Connect wallet -->
     <div class="card" id="wallet-card">
       <h2>Connect Wallet</h2>
@@ -366,9 +451,10 @@
     var connectedWallet = null;
     var rpcUrl = "https://api.mainnet-beta.solana.com";
     var currentTransactions = [];
+    var selectedSol = 0;
 
     var KNOWN_WALLETS = [
-      { name: "Phantom",       check: function() { return window.phantom?.solana; },                        icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128' fill='none'%3E%3Crect width='128' height='128' rx='26' fill='%23AB9FF2'/%3E%3Cpath d='M110.584 64.914h-7.117c0-24.84-20.321-44.97-45.4-44.97-24.772 0-44.9 19.693-45.39 44.144-.503 25.097 20.57 46.796 45.834 46.796h2.049c22.212 0 42.127-14.478 49.085-35.608a4.288 4.288 0 00-4.06-5.768h-.001zm-73.894 7.16a5.393 5.393 0 01-5.4 5.38 5.393 5.393 0 01-5.4-5.38 5.393 5.393 0 015.4-5.38 5.393 5.393 0 015.4 5.38zm22.2 0a5.393 5.393 0 01-5.4 5.38 5.393 5.393 0 01-5.4-5.38 5.393 5.393 0 015.4-5.38 5.393 5.393 0 015.4 5.38z' fill='%23FFF'/%3E%3C/svg%3E" },
+      { name: "Phantom",       check: function() { return window.phantom?.solana || (window.solana && window.solana.isPhantom); },  icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128' fill='none'%3E%3Crect width='128' height='128' rx='26' fill='%23AB9FF2'/%3E%3Cpath d='M110.584 64.914h-7.117c0-24.84-20.321-44.97-45.4-44.97-24.772 0-44.9 19.693-45.39 44.144-.503 25.097 20.57 46.796 45.834 46.796h2.049c22.212 0 42.127-14.478 49.085-35.608a4.288 4.288 0 00-4.06-5.768h-.001zm-73.894 7.16a5.393 5.393 0 01-5.4 5.38 5.393 5.393 0 01-5.4-5.38 5.393 5.393 0 015.4-5.38 5.393 5.393 0 015.4 5.38zm22.2 0a5.393 5.393 0 01-5.4 5.38 5.393 5.393 0 01-5.4-5.38 5.393 5.393 0 015.4-5.38 5.393 5.393 0 015.4 5.38z' fill='%23FFF'/%3E%3C/svg%3E" },
       { name: "Solflare",      check: function() { return window.solflare; },                               icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23FC7227'/%3E%3Cpath d='M64 28l28 36-28 36-28-36z' fill='%23FFF'/%3E%3C/svg%3E" },
       { name: "Backpack",      check: function() { return window.backpack; },                               icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%23E33E3F'/%3E%3Cpath d='M44 48h40v40H44z' rx='8' fill='%23FFF'/%3E%3Cpath d='M52 36h24v16H52z' rx='4' fill='%23FFF'/%3E%3C/svg%3E" },
       { name: "Coinbase",      check: function() { return window.coinbaseSolana; },                         icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%230052FF'/%3E%3Ccircle cx='64' cy='64' r='32' fill='%23FFF'/%3E%3Ccircle cx='64' cy='64' r='16' fill='%230052FF'/%3E%3C/svg%3E" },
@@ -558,10 +644,11 @@
       showStatus('<span class="spinner"></span>Building fee setup transactions...', "info");
 
       try {
-        var resp = await fetch(API_BASE + "/api/launch/" + PAGE.sessionId + "/connect", {
+        var initialBuyLamports = Math.round(selectedSol * 1000000000);
+      var resp = await fetch(API_BASE + "/api/launch/" + PAGE.sessionId + "/connect", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet: pubkey }),
+          body: JSON.stringify({ wallet: pubkey, initialBuyLamports: initialBuyLamports }),
         });
         var data = await resp.json();
         if (!resp.ok) throw new Error(data.error || "Failed to build fee config");
@@ -744,6 +831,30 @@
       renderWallets();
     }
 
+    /** Wire up the SOL amount picker. */
+    function initSolPicker() {
+      var picker = document.getElementById("sol-picker");
+      picker.classList.remove("hidden");
+      var slider = document.getElementById("sol-slider");
+      var display = document.getElementById("sol-display");
+      var presets = document.querySelectorAll(".sol-preset");
+
+      function updateSol(val) {
+        selectedSol = parseFloat(val);
+        display.textContent = selectedSol + " SOL";
+        slider.value = selectedSol;
+        presets.forEach(function(btn) {
+          var match = parseFloat(btn.getAttribute("data-sol")) === selectedSol;
+          btn.className = "sol-preset" + (match ? " active" : "");
+        });
+      }
+
+      slider.addEventListener("input", function(e) { updateSol(e.target.value); });
+      presets.forEach(function(btn) {
+        btn.addEventListener("click", function() { updateSol(btn.getAttribute("data-sol")); });
+      });
+    }
+
     /** Initialize two-phase launch mode. */
     async function initLaunchMode() {
       document.getElementById("phase-indicator").classList.remove("hidden");
@@ -756,6 +867,7 @@
       var data = await resp.json();
       rpcUrl = data.rpcUrl || rpcUrl;
       renderMeta(data.meta);
+      initSolPicker();
       renderWallets();
     }
 

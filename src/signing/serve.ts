@@ -66,7 +66,7 @@ interface ScoutSession {
   initialBuyLamports: number;
   meta: Record<string, string>;
   rpcUrl: string;
-  phase: "preview" | "approved" | "complete";
+  phase: "preview" | "approved" | "fee_config" | "launch" | "complete";
   wallet: string | null;
   meteoraConfigKey: string | null;
   signatures: string[];
@@ -209,10 +209,14 @@ function registerLaunchRoutes(app: express.Express, pageHtml: string): void {
       return;
     }
 
-    const { wallet } = req.body;
+    const { wallet, initialBuyLamports: buyFromPage } = req.body;
     if (!wallet || typeof wallet !== "string") {
       res.status(400).json({ error: "Missing wallet address." });
       return;
+    }
+
+    if (typeof buyFromPage === "number") {
+      session.initialBuyLamports = buyFromPage;
     }
 
     try {
@@ -326,11 +330,6 @@ function registerScoutRoutes(app: express.Express): void {
       return;
     }
 
-    const feedback = req.body.feedback || "";
-    const updatedPrompt = feedback
-      ? `${session.imagePrompt}. User feedback: ${feedback}`
-      : session.imagePrompt;
-
     try {
       const { generateTokenImage, resolveImageConfig } = await import("../agent/strategies/imagegen.js");
       const config = resolveImageConfig();
@@ -338,13 +337,14 @@ function registerScoutRoutes(app: express.Express): void {
         res.status(400).json({ error: "No image generation API key configured." });
         return;
       }
-      const result = await generateTokenImage(updatedPrompt, config);
+      const prompt = session.imagePrompt
+        || `A bold, iconic token logo for "${session.name}" ($${session.symbol}). ${session.description}. Clean vector style, centered on a solid color background, designed to look great at small sizes.`;
+      const result = await generateTokenImage(prompt, config);
       if (!result?.url) {
         res.status(500).json({ error: "Image generation returned no result." });
         return;
       }
       session.imageUrl = result.url;
-      session.imagePrompt = updatedPrompt;
       res.json({ imageUrl: result.url });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -359,14 +359,17 @@ function registerScoutRoutes(app: express.Express): void {
       return;
     }
 
-    const { wallet } = req.body;
+    const { wallet, initialBuyLamports: buyFromPage } = req.body;
     if (!wallet || typeof wallet !== "string") {
       res.status(400).json({ error: "Missing wallet address." });
       return;
     }
 
+    const buyLamports = typeof buyFromPage === "number" ? buyFromPage : session.initialBuyLamports;
+
     try {
       session.wallet = wallet;
+      session.initialBuyLamports = buyLamports;
       session.phase = "approved";
 
       const { getBagsSDK } = await import("../client/bags-sdk-wrapper.js");
@@ -389,26 +392,55 @@ function registerScoutRoutes(app: express.Express): void {
       session.meteoraConfigKey = feeResult.meteoraConfigKey;
 
       if (feeResult.transactions.length === 0) {
+        session.phase = "launch";
         const launchResult = await buildLaunchTx(
           wallet, session.uri!, session.tokenMint!,
-          session.meteoraConfigKey!, session.initialBuyLamports,
+          session.meteoraConfigKey!, buyLamports,
         );
         res.json({
+          phase: "launch",
           transactions: [launchResult.transaction],
-          description: `Launch ${session.symbol} (fee config exists)`,
+          description: `Launch ${session.symbol}`,
         });
         return;
       }
 
+      session.phase = "fee_config";
+      res.json({
+        phase: "fee_config",
+        transactions: feeResult.transactions,
+        description: `Sign ${feeResult.transactions.length} fee setup transaction(s) for ${session.symbol}`,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: msg });
+    }
+  });
+
+  app.post("/api/scout/:sessionId/fee-signed", async (req, res) => {
+    const session = sessions.get(req.params.sessionId);
+    if (!session || session.type !== "scout") {
+      res.status(404).json({ error: "Session not found." });
+      return;
+    }
+    if (session.phase !== "fee_config") {
+      res.status(400).json({ error: `Expected phase 'fee_config', got '${session.phase}'.` });
+      return;
+    }
+
+    session.signatures.push(...(req.body.signatures || []));
+
+    try {
       const launchResult = await buildLaunchTx(
-        wallet, session.uri!, session.tokenMint!,
+        session.wallet!, session.uri!, session.tokenMint!,
         session.meteoraConfigKey!, session.initialBuyLamports,
       );
-
-      const allTxs = [...feeResult.transactions, launchResult.transaction];
+      session.phase = "launch";
+      const solAmount = session.initialBuyLamports / 1_000_000_000;
       res.json({
-        transactions: allTxs,
-        description: `Sign ${allTxs.length} transactions to launch ${session.symbol}`,
+        phase: "launch",
+        transactions: [launchResult.transaction],
+        description: `Launch ${session.symbol} (initial buy: ${solAmount} SOL)`,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

@@ -44,7 +44,6 @@ export function resolveImageConfig(): ImageGenConfig | null {
 
 /**
  * Generate a token logo image from a text prompt.
- * Returns null if generation fails or no API key is configured.
  * @param prompt - Descriptive prompt for the image.
  * @param config - Provider and API key to use.
  * @returns Image URL and provider, or null on failure.
@@ -65,7 +64,7 @@ export async function generateTokenImage(
 }
 
 /**
- * Generate an image using fal.ai's Nano Banana 2 Pro (Gemini) model.
+ * Generate an image using fal.ai's Nano Banana Pro (Gemini) model.
  * @param prompt - Image generation prompt.
  * @param apiKey - fal.ai API key.
  * @returns Generated image URL.
