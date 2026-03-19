@@ -89,6 +89,52 @@ Sessions expire after 10 minutes. If a session expires, just ask the agent to re
 
 ---
 
+## Graduated Tokens (Liquidity Pool Migration)
+
+When a token hits enough volume on Bags.fm, it "graduates" — liquidity migrates from the virtual bonding curve pool into a real DAMM (Dynamic AMM) liquidity pool. This changes how fee claiming works.
+
+### What Changes After Graduation
+
+- **Two fee sources instead of one.** A graduated token has fees sitting in both the original virtual pool and the new DAMM pool. When you claim, the API builds **2 transactions** — one for each pool. Both need to be signed.
+- **Heavier transactions.** DAMM pool claims involve more on-chain accounts (position NFTs, token vaults, etc.). This means the Bags API takes longer to build them and the transactions take longer to confirm on Solana.
+- **The API may time out.** If you get a 502 or 504 error when claiming a graduated token, wait a minute and try again. The API is building a complex transaction and sometimes the upstream server needs a second attempt.
+
+### What You'll See in Claimable Positions
+
+For a graduated token, `bags_claimable_positions` returns both pool breakdowns:
+
+```
+virtualPoolClaimableLamportsUserShare:  145847938    (~0.15 SOL)
+dammPoolClaimableLamportsUserShare:     4373717742   (~4.37 SOL)
+totalClaimableLamportsUserShare:        4519565680   (~4.52 SOL)
+isMigrated: true
+```
+
+The `isMigrated: true` flag tells you this token has graduated. The total is the sum of both pools.
+
+### Tips for Graduated Token Claims
+
+1. **Expect 2 transactions.** The signing page will walk you through both — sign them in order.
+2. **Be patient with confirmation.** The signing page automatically resends and retries confirmation for up to ~150 blocks (~60 seconds). You'll see status updates like "Confirming... (resend 2/5)" — this is normal.
+3. **If the API returns 502/504**, just retry after a minute. The transaction builder for migrated pools is heavier and occasionally times out.
+4. **If confirmation times out**, check the transaction signature on [Solscan](https://solscan.io) — it may have landed. If not, re-run the claim for a fresh transaction with an updated blockhash.
+
+---
+
+## Transaction Confirmation
+
+The signing page uses a robust confirmation strategy:
+
+1. Sends the signed transaction to Solana
+2. Polls signature status every 2 seconds
+3. Resends the transaction up to 5 times while waiting (in case the first send was dropped)
+4. Uses blockhash-based expiry — keeps trying until the blockhash expires (~60 seconds), not an arbitrary timer
+5. Shows real-time status updates so you know what's happening
+
+This handles the common case where Solana is congested and a single send + 30-second wait isn't enough.
+
+---
+
 ## Troubleshooting
 
 ### "Session not found or expired"
@@ -106,3 +152,11 @@ You must connect the **same wallet** that is configured as the fee claimer for t
 ### Transaction fails after signing
 
 This can happen if the on-chain state changed between building the transaction and signing it (e.g., someone else claimed first). Re-run the claim to get a fresh transaction.
+
+### 502/504 errors on graduated tokens
+
+The Bags API is timing out while building claim transactions for migrated DAMM pools. These are heavier than normal. Wait a minute and retry — it usually works on the second or third attempt.
+
+### "Transaction expired (blockhash no longer valid)"
+
+The transaction wasn't confirmed before the blockhash expired (~60 seconds). This usually means Solana is congested. Re-run the claim to get a fresh transaction with a new blockhash.
