@@ -1,7 +1,7 @@
 {
   "name": "bags-sdk-mcp",
   "version": "1.0.0",
-  "description": "Batteries-included MCP server for the full Bags.fm API. 40 tools, 4 resources, 6 prompts, fee-config composer, agent lifecycle SDK, and autonomous agent mode.",
+  "description": "Batteries-included MCP server for the full Bags.fm API. 46 tools, 4 resources, 6 prompts, fee-config composer, agent lifecycle SDK, and autonomous agent mode.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -38,6 +38,7 @@
     "@bagsfm/bags-sdk": "^1.2.7",
     "@modelcontextprotocol/sdk": "^1.12.0",
     "@solana/web3.js": "^1.95.0",
+    "cors": "^2.8.6",
     "express": "^4.21.0",
     "zod": "^3.25.0"
   },

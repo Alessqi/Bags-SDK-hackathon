@@ -103,6 +103,11 @@ async function main() {
 
   // Step 1: Create token info with local image via multipart form
   const logoPath = path.join(__dirname, "..", "assets", "logo.png");
+  if (!fs.existsSync(logoPath)) {
+    console.error("ERROR: No logo found at assets/logo.png");
+    console.error("Place a 512x512 PNG there before running this script.");
+    process.exit(1);
+  }
   console.log("1. Creating token metadata + uploading logo to IPFS...");
 
   const form = new FormData();

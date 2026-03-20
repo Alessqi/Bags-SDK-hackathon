@@ -113,7 +113,7 @@ The signing page runs on localhost. Connect the **same wallet you launched with*
 
 ---
 
-## 44 Tools
+## 46 Tools
 
 | Domain | Tools |
 |--------|-------|

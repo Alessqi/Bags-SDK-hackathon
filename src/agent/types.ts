@@ -16,7 +16,6 @@ export interface StrategyConfig {
 
 export interface AgentConfig {
   strategies: string[];
-  monitor: boolean;
 }
 
 export interface AutoClaimConfig {

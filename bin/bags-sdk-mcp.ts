@@ -24,11 +24,11 @@ async function main(): Promise<void> {
     const { startAgent } = await import("../src/agent/cli.js");
     const strategies: string[] = [];
     if (args.includes("--auto-claim")) strategies.push("auto-claim");
+    if (args.includes("--monitor")) strategies.push("monitor");
     if (args.includes("--scout")) strategies.push("scout");
-    await startAgent({
-      strategies,
-      monitor: args.includes("--monitor"),
-    });
+    if (args.includes("--fee-optimize")) strategies.push("fee-optimize");
+    if (args.includes("--rebalance")) strategies.push("rebalance");
+    await startAgent({ strategies });
     return;
   }
 
@@ -56,22 +56,27 @@ USAGE:
   bags-sdk-mcp --agent --auto-claim   Agent with auto-claim strategy
   bags-sdk-mcp --agent --monitor      Agent with launch monitor
   bags-sdk-mcp --agent --scout        Agent with scout strategy
-  bags-sdk-mcp --agent --scout --auto-claim --monitor   All strategies
+  bags-sdk-mcp --agent --fee-optimize   One-shot fee config analysis
+  bags-sdk-mcp --agent --rebalance      One-shot portfolio rebalance advice
+  bags-sdk-mcp --agent --scout --auto-claim --monitor   All loop strategies
 
 OPTIONS:
-  --http          Use streamable HTTP transport instead of stdio
-  --port=PORT     HTTP port (default 3000)
-  --agent         Run in autonomous agent mode
-  --auto-claim    Enable auto-claim strategy (agent mode)
-  --monitor       Enable launch monitor strategy (agent mode)
-  --scout         Enable scout strategy (agent mode)
-  -h, --help      Show this help message
+  --http            Use streamable HTTP transport instead of stdio
+  --port=PORT       HTTP port (default 3000)
+  --agent           Run in autonomous agent mode
+  --auto-claim      Enable auto-claim strategy (loop)
+  --monitor         Enable launch monitor strategy (loop)
+  --scout           Enable scout strategy (loop)
+  --fee-optimize    Analyze fee configs and suggest improvements (one-shot)
+  --rebalance       Analyze portfolio positions and suggest actions (one-shot)
+  -h, --help        Show this help message
 
 ENVIRONMENT:
-  BAGS_API_KEY        Required. Get one at dev.bags.fm
-  SOLANA_RPC_URL      Optional. Default: mainnet-beta
-  NOUS_API_KEY        Agent mode: Hermes 4 for fast decisions
-  ANTHROPIC_API_KEY   Agent mode: Sonnet for strategic decisions
+  BAGS_API_KEY          Required. Get one at dev.bags.fm
+  SOLANA_RPC_URL        Optional. Default: mainnet-beta
+  NOUS_API_KEY          Agent mode: Hermes 4 for fast decisions
+  ANTHROPIC_API_KEY     Agent mode: Sonnet for strategic decisions
+  AGENT_WALLET_PUBKEY   Required for --fee-optimize and --rebalance
 `.trim());
 }
 
